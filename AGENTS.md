@@ -51,7 +51,7 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/components/Atmosphere.svelte` | background glow layer + foreground grain |
 | `src/app.css` | Tailwind v4 entry, palette and layout tokens |
 | `src/app.html` | pre-paint theme resolution; must stay in step with the toggle |
-| `static/` | `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
+| `static/` | `404.html`, `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
 | `metadata-api/` | the Worker that serves `/api/metadata` |
 | `scripts/` | Go CLI for managing the bucket. **Go only** — see Rules |
 | `website-draft.md` | the design brief this build follows, including the reference |
@@ -204,6 +204,15 @@ gh run list --limit 1 --json databaseId --jq '.[0].databaseId' | xargs -I{} gh r
 ```sh
 npm run worker:deploy        # cd metadata-api && wrangler deploy
 ```
+
+**The 404 page** — `static/404.html` is a standalone page, copied into the artifact,
+which GitHub Pages serves for any path that is not a file in the deploy, with a 404
+status (confirmed: `custom_404: false`, and the Pages default only applies when no
+`404.html` exists). It deliberately avoids hashed asset names and JavaScript so it
+renders even if the bundle fails, which means its design tokens are a copy of
+`src/app.css` rather than a reference to it — update both if the palette moves.
+`adapter-static` never emits a `404.html` (it only writes a `fallback` when one is
+configured), so this file is the only 404 handling on the site.
 
 ## Verification
 

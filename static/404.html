@@ -1,0 +1,198 @@
+<!doctype html>
+<!--
+	Standalone 404. Served by GitHub Pages for any path that is not a file in the
+	deployed artifact, with a 404 status. It is deliberately dependency-free: no
+	hashed asset names (they change every build), no JavaScript, so it renders even
+	if the app bundle never loads. Tokens mirror src/app.css (dark).
+-->
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>404 — Fahad Faruqi</title>
+		<meta name="robots" content="noindex" />
+		<link rel="icon" href="/favicon.png" />
+		<style>
+			:root {
+				--bg: #0a0a0a;
+				--fg: #f2f1ee;
+				--muted: #a6a29c;
+				--faint: #857f78;
+				--line: rgba(242, 241, 238, 0.13);
+				--line-2: rgba(242, 241, 238, 0.34);
+				--gutter: clamp(1rem, 3.2vw, 3rem);
+				--display: clamp(4rem, 22vw, 20rem);
+				--lead: clamp(1.25rem, 2.6vw, 2.25rem);
+				--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			html {
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				display: grid;
+				grid-template-rows: auto 1fr auto;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+				line-height: 1.45;
+				overflow-x: hidden;
+			}
+
+			/* ── atmosphere: a light behind the page, then film grain over it ── */
+
+			.backdrop {
+				position: fixed;
+				inset: 0;
+				z-index: 0;
+				pointer-events: none;
+				background:
+					radial-gradient(
+						38rem 30rem at 78% 82%,
+						rgba(255, 96, 40, 0.16),
+						rgba(255, 96, 40, 0) 68%
+					),
+					radial-gradient(60rem 40rem at 12% 8%, rgba(120, 140, 220, 0.05), transparent 70%);
+			}
+
+			.backdrop::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				box-shadow: inset 0 0 26vmax 8vmax rgba(0, 0, 0, 0.55);
+			}
+
+			.overlay {
+				position: fixed;
+				inset: 0;
+				z-index: 6;
+				pointer-events: none;
+				opacity: 0.23;
+				mix-blend-mode: overlay;
+				background-image: var(--grain);
+				background-size: 160px 160px;
+			}
+
+			/* ── page ── */
+
+			header,
+			footer {
+				position: relative;
+				z-index: 1;
+				padding-inline: var(--gutter);
+			}
+
+			header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				padding-block: clamp(0.9rem, 2.2vh, 1.4rem);
+				border-bottom: 1px solid var(--line);
+			}
+
+			.mark {
+				font-size: 0.875rem;
+				letter-spacing: -0.01em;
+			}
+
+			main {
+				position: relative;
+				z-index: 1;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				gap: clamp(1.5rem, 5vh, 3rem);
+				padding: clamp(3rem, 12vh, 9rem) var(--gutter);
+			}
+
+			.code {
+				margin: 0;
+				font-size: var(--display);
+				font-weight: 500;
+				line-height: 0.82;
+				letter-spacing: -0.05em;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.line {
+				margin: 0;
+				max-width: 34ch;
+				font-size: var(--lead);
+				letter-spacing: -0.02em;
+			}
+
+			.back {
+				align-self: flex-start;
+				padding-top: 0.75rem;
+				border-top: 1px solid var(--line);
+				font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, 'Roboto Mono', monospace;
+				font-size: 0.8125rem;
+				letter-spacing: 0.16em;
+				text-transform: uppercase;
+				color: var(--muted);
+				text-decoration: none;
+				transition: color 0.25s ease;
+			}
+
+			.back:hover,
+			.back:focus-visible {
+				color: var(--fg);
+			}
+
+			.back span {
+				display: inline-block;
+				transition: transform 0.25s ease;
+			}
+
+			.back:hover span {
+				transform: translateX(0.3rem);
+			}
+
+			footer {
+				padding-block: clamp(1.25rem, 4vh, 2.5rem);
+				border-top: 1px solid var(--line);
+			}
+
+			.label {
+				font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, 'Roboto Mono', monospace;
+				font-size: 0.6875rem;
+				letter-spacing: 0.16em;
+				text-transform: uppercase;
+				color: var(--faint);
+			}
+
+			a:focus-visible {
+				outline: 1px solid var(--line-2);
+				outline-offset: 3px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="backdrop"></div>
+		<div class="overlay"></div>
+
+		<header>
+			<a class="mark" href="/">Fahad Faruqi</a>
+			<span class="label">Photographs</span>
+		</header>
+
+		<main>
+			<p class="code">404</p>
+			<p class="line">There is no photograph at this address.</p>
+			<a class="back" href="/">Back to the gallery <span>→</span></a>
+		</main>
+
+		<footer>
+			<span class="label">art.fahadfaruqi.com</span>
+		</footer>
+	</body>
+</html>
