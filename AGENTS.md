@@ -188,8 +188,10 @@ Two independent targets.
 **The site** — `.github/workflows/deploy.yml` runs on push to `main`: `npm ci`,
 `npm run build`, `actions/upload-pages-artifact`, `actions/deploy-pages`. Pages is
 configured with `build_type: workflow` and the custom domain
-`art.fahadfaruqi.com`, so the repository root is *not* what gets served and
-`index.html` at the root is dead weight. Steps:
+`art.fahadfaruqi.com`, so the repository root is not what gets served: the artifact's
+own `build/index.html` is. Nothing outside `build/` reaches the live site — anything
+placed at the repository root would be invisible on the web, `robots.txt` and
+`favicon.png` included (they come from `static/`). Steps:
 
 ```sh
 npm run check && npx vite build        # catch it locally first
