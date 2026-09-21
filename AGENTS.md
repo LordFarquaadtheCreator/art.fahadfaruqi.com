@@ -42,6 +42,9 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`), date formatting |
 | `src/lib/utils/group-images.ts` | grouping into sets, slugify, ordering |
 | `src/lib/utils/variants.ts` | derivative URL convention |
+| `src/lib/webgl/layer.ts` | module-level singleton + the Svelte action that registers a plate |
+| `src/lib/webgl/PlateLayer.ts` | the canvas: one quad per visible plate, rect-driven, texture budget |
+| `src/lib/webgl/shaders.ts` | GLSL for the plate quads |
 | `src/lib/components/GalleryGrid.svelte` | per-set sections, offset 12-column grid, reveal observer |
 | `src/lib/components/PhotoPlate.svelte` | one photograph: LQIP, image, caption |
 | `src/lib/components/Lightbox.svelte` | full-screen viewer: EXIF panel, keyboard, swipe |
@@ -122,14 +125,19 @@ Consequences to keep in mind:
 ## Image derivatives
 
 Originals are 6016×4016 PNGs at 110–140 MB. Nothing in the app loads them. Every
-original is expected to have three WebP siblings, and `src/lib/utils/variants.ts`
+original is expected to have four WebP siblings, and `src/lib/utils/variants.ts`
 derives the URL from the original key by stripping the extension:
 
 | Key | Width | Quality | Used for |
 | --- | --- | --- | --- |
 | `d/w2200/<name>.webp` | 2200 | 82 | lightbox / viewer |
-| `d/w800/<name>.webp` | 800 | 78 | gallery grid cells |
+| `d/w1600/<name>.webp` | 1600 | 80 | the 1600w srcset candidate — 2× displays and the WebGL quads |
+| `d/w800/<name>.webp` | 800 | 78 | gallery grid cells at 1× |
 | `d/lqip/<name>.webp` | 24 | 60 | blur-up placeholder; also carries `naturalWidth`/`naturalHeight`, which the grid uses to reserve each cell's aspect ratio |
+
+`PhotoPlate.svelte` offers the three real sizes through `srcset` with
+`sizes="(min-width: 1024px) 55vw, 100vw"`, so the browser picks: 800 for a 1×
+desktop cell, 1600 for the same cell on a 2× display or a full-width phone.
 
 A missing derivative is a broken image in the gallery with no runtime error, because
 the URL is built by convention rather than looked up. After any upload, verify:
@@ -147,8 +155,80 @@ kept out of the repo (the user's rule: `scripts/` holds Go only). It lives at
 reads the metadata API, skips derivatives that already return 200, and uploads through
 `node_modules/.bin/wrangler r2 object put --remote` with
 `cache-control: public, max-age=31536000, immutable`. If it is gone, rewriting it is
-a small job: read the listing, resize to the three widths above, upload to the three
+a small job: read the listing, resize to the four widths above, upload to the four
 `d/` prefixes. It needs R2 credentials, which are in `scripts/config.yaml` (gitignored).
+
+## The WebGL layer
+
+`src/lib/webgl/` draws every visible plate as a textured quad on **one** fixed
+canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
+27 contexts would be 27 copies of the GPU state and a hard browser limit.
+
+- `layer.ts` owns the module-level singleton and the Svelte action
+  `registerPlate(frame)` that `PhotoPlate.svelte` applies to `.plate__frame`.
+  The action returns a teardown, so the layer ref-counts and disposes itself
+  when the last plate unmounts.
+- Every tick reads each frame's `getBoundingClientRect()` and copies it onto the
+  plane. The layer knows nothing about layout, so the offset grid, the portrait
+  spans and any future CSS change are picked up for free.
+- **The `<img>` is the photograph, not a fallback.** It is hidden
+  (`data-gl="live"`) only after its quad has actually drawn pixels, and it is
+  never gated on CORS: the layer fetches its own bytes (`fetch` →
+  `createImageBitmap` → `THREE.Texture`), so if CORS breaks, or the bytes are
+  unreachable, the plate simply stays a plain image instead of blanking.
+- Textures are released for frames more than `MARGIN` (400 CSS px) outside the
+  viewport, and `dropTexture` closes the `ImageBitmap`.
+- `const EFFECTS` in `PlateLayer.ts` is the master switch for displacement and
+  the RGB split. Turning it off leaves a pure pass-through, which is the state
+  to debug a mis-registered quad in — a seam shows up immediately.
+- `data-webgl="off"` on `<html>` stops the loop and hands every photograph back
+  to its own `<img>`. The CSS half of that lives in `src/app.css` and needs
+  `!important` because the rule it overrides is scoped (`.plate__image.svelte-hash`).
+- A lost GL context does the same thing by itself: the loop stops, textures are
+  dropped, the DOM images come back. It must never keep running — continuing
+  would re-upload onto a dead canvas while the images stay hidden.
+
+### Bucket CORS is a prerequisite
+
+The layer needs the bucket to answer CORS for the origins the site runs on.
+This is bucket state, not repo state, so it is not in git:
+
+```sh
+cat > /tmp/r2-cors.json <<'JSON'
+{"rules":[{"allowed":{"origins":["https://art.fahadfaruqi.com","https://lordfarquaadthecreator.github.io","http://localhost:4173","http://localhost:5200"],"methods":["GET","HEAD"],"headers":["*"]},"exposeHeaders":["ETag","Content-Length"],"maxAgeSeconds":86400}]}
+JSON
+cd metadata-api && npx wrangler r2 bucket cors set assets --file /tmp/r2-cors.json
+curl -s -D- -o /dev/null -H "Origin: https://art.fahadfaruqi.com" \
+  https://assets.fahadfaruqi.com/d/w800/sam-10.webp | grep -i access-control-allow-origin
+```
+
+Note the shape: `wrangler r2 bucket cors set` takes the Wrangler
+`{rules:[{allowed:{…}}]}` form, **not** the R2 REST `AllowedOrigins` shape, which
+it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
+
+### Traps that cost time here
+
+- **Never alias a package to itself.** `svelte.config.js` briefly carried
+  `kit: { alias: { three: 'three' } }`, added by mistake in the redesign commit.
+  Nothing imported `three` then, so it sat there until the layer did — and the
+  build failed with `[UNLOADABLE_DEPENDENCY] Could not load three`, which reads
+  like a resolver bug rather than a config one. `resolve.alias` in
+  `vite.config.ts` cannot override `kit.alias`, so that fix has to be made in
+  `svelte.config.js`.
+- **Do not set `texture.colorSpace = SRGBColorSpace` on a pass-through shader.**
+  It makes three use the `SRGB8_ALPHA8` internal format, the GPU decodes to
+  linear on sample, and the photograph comes out visibly darker than the same
+  file drawn by the browser. Measured in this page: a 128 grey samples as **55**
+  (73 levels down). Leave the default and write the sampled value straight out.
+- **Keep three's default mipmap filters when downscaling.** The grid draws a
+  1600px source into a ~790px quad; `minFilter = LinearFilter` with no mipmaps
+  under-samples and reads as soft. `Texture`'s defaults
+  (`LinearMipmapLinearFilter` + `generateMipmaps`) are the correct chain.
+- **Cached derivatives predate CORS.** The `d/` objects are served
+  `immutable, max-age=31536000`. A browser that fetched one before the bucket
+  allowed this origin holds a copy that can never satisfy a CORS request, and
+  `cache: 'default'` will keep failing on it. That is why `fetchBitmap` retries
+  once with `cache: 'reload'` — only a network refetch clears it.
 
 ## Design system
 
@@ -245,6 +325,21 @@ OPTIONS, trailing slash, 404s, CORS on errors).
 - Screenshots come back as JPEG. Fine grain does not survive the compression, so do
   not judge grain visibility from one; read the computed opacity and blend mode of
   `.grain--coarse` instead.
+- **A hidden window produces no frames at all.** If the OS window is backgrounded,
+  every tab reports `visibilityState: "hidden"` and `requestAnimationFrame` never
+  fires — so the WebGL layer never draws, `data-gl` never appears and the plates
+  legitimately stay as plain images. `Page.bringToFront`, `Page.startScreencast` and
+  `Emulation.setVirtualTimePolicy` do not fix this. Verify the layer in a visible
+  window; in a hidden one, use the `data-webgl="off"` flag to A/B the CSS half, and
+  `document.querySelectorAll('.plate__frame[data-gl=live]').length` to see whether the
+  loop has run at all.
+- **`Emulation.setVirtualTimePolicy` freezes the page.** Setting it to `pause` and
+  leaving it stops the clock, so the tab sits at `readyState: "loading"` with no
+  `<body>` for as long as it is set — which reads exactly like a broken deploy. Release
+  it with `{"policy":"advance","budget":N}` before concluding anything.
+- A CSS transition reads as its *current animated value* in `getComputedStyle`, so in a
+  frame-starved tab `opacity` never reaches its target and an override looks broken.
+  Set `el.style.transition = 'none'` before measuring.
 
 ## Credentials and secrets
 
