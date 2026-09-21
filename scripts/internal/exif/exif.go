@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	exif "github.com/dsoprea/go-exif/v3"
@@ -18,6 +19,47 @@ type Metadata struct {
 	Set         string
 	Number      int
 	Exif        map[string]string
+}
+
+// Validate reports the required fields that are still empty.
+func (m *Metadata) Validate() error {
+	missingFields := []string{}
+	if m.Title == "" {
+		missingFields = append(missingFields, "title")
+	}
+	if m.AltText == "" {
+		missingFields = append(missingFields, "altText")
+	}
+	if m.Description == "" {
+		missingFields = append(missingFields, "description")
+	}
+	if m.Set == "" {
+		missingFields = append(missingFields, "set")
+	}
+	if m.Number == 0 {
+		missingFields = append(missingFields, "number")
+	}
+	if len(missingFields) > 0 {
+		return fmt.Errorf("missing required fields: %s", strings.Join(missingFields, ", "))
+	}
+	return nil
+}
+
+// Map renders the metadata as the custom metadata R2 stores alongside the object.
+func (m *Metadata) Map() map[string]string {
+	metaMap := map[string]string{
+		"title":       m.Title,
+		"altText":     m.AltText,
+		"description": m.Description,
+		"set":         m.Set,
+		"number":      strconv.Itoa(m.Number),
+	}
+
+	for k, v := range m.Exif {
+		metaMap[k] = v
+	}
+
+	return metaMap
 }
 
 func Extract(filePath string) (*Metadata, error) {

@@ -15,6 +15,7 @@ type Config struct {
 		AccessKeyID     string `yaml:"access_key_id"`
 		SecretAccessKey string `yaml:"secret_access_key"`
 		S3APIEndpoint   string `yaml:"s3_api_endpoint"`
+		CDNBase         string `yaml:"cdn_base"`
 	} `yaml:"r2"`
 }
 
@@ -27,6 +28,10 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	if base := os.Getenv("CDN_BASE"); base != "" {
+		cfg.R2.CDNBase = base
 	}
 
 	return &cfg, nil

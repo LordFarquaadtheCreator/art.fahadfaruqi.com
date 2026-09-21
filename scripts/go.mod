@@ -1,4 +1,4 @@
-module upload-images
+module manage-images
 
 go 1.25.6
 

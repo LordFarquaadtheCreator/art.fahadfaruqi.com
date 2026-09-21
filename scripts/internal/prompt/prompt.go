@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"upload-images/internal/exif"
+	"manage-images/internal/exif"
 )
 
 func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*exif.Metadata, error) {
