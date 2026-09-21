@@ -6,6 +6,7 @@
 	import SetIndex from '$lib/components/SetIndex.svelte';
 	import SplitText from '$lib/components/SplitText.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { count } from '$lib/actions/count';
 	import { groupBySet } from '$lib/utils/group-images';
 	import { fetchPhotos, type Photo } from '$lib/utils/metadata';
 
@@ -48,10 +49,31 @@
 		viewerOpen = true;
 	}
 
-	function selectSet(slug: string) {
+	let pass = $state(0);
+
+	const reducedMotion = () =>
+		typeof window !== 'undefined' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	// Every filter change bumps the pass, which restarts the gallery's wipe without
+	// re-mounting a single plate — the photographs stay decoded and the WebGL layer
+	// keeps the textures it already uploaded.
+	function setFilter(slug: string) {
+		if (slug === activeSet) return;
+
 		activeSet = slug;
-		if (slug !== 'all') {
-			document.getElementById(slug)?.scrollIntoView({ block: 'start' });
+		pass += 1;
+
+		const gallery = document.querySelector('.gallery');
+		if (!gallery) return;
+
+		// Only travel when the gallery is still below the fold, so filtering from the
+		// masthead while reading the grid does not yank the page out from under you.
+		if (gallery.getBoundingClientRect().top > window.innerHeight * 0.5) {
+			gallery.scrollIntoView({
+				behavior: reducedMotion() ? 'auto' : 'smooth',
+				block: 'start'
+			});
 		}
 	}
 
@@ -70,7 +92,7 @@
 <header class="masthead">
 	<div class="masthead__inner shell">
 		<a class="masthead__mark" href="#top">Fahad Faruqi</a>
-		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={(slug) => (activeSet = slug)} />
+		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
 		<ThemeToggle />
 	</div>
 </header>
@@ -87,7 +109,7 @@
 			<p class="label">Queens, New York</p>
 			<p class="label num">
 				{#if status === 'ready'}
-					{photos.length} photographs &middot; {sets.length} sets
+					<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
 				{:else if status === 'loading'}
 					Loading index
 				{:else}
@@ -124,13 +146,13 @@
 					class="sets__row"
 					class:sets__row--active={activeSet === set.slug}
 					type="button"
-					onclick={() => (activeSet = activeSet === set.slug ? 'all' : set.slug)}
+					onclick={() => setFilter(activeSet === set.slug ? 'all' : set.slug)}
 				>
 					<span class="sets__name">
 						<span class="label num">{String(index + 1).padStart(2, '0')}</span>
 						{set.name}
 					</span>
-					<span class="num sets__count">{set.photos.length}</span>
+					<span class="num sets__count" use:count={set.photos.length}></span>
 					<span class="num sets__date">{latest(set.photos)}</span>
 				</button>
 			{/each}
@@ -138,7 +160,7 @@
 	{/if}
 
 	{#if status === 'ready' && visibleSets.length > 0}
-		<GalleryGrid sets={visibleSets} onOpen={openViewer} />
+		<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
 	{/if}
 </main>
 
@@ -245,9 +267,30 @@
 	}
 
 	.sets__row {
+		position: relative;
 		padding-block: 0.9rem;
 		border-bottom: 1px solid var(--line);
 		transition: color 0.25s ease;
+	}
+
+	/* The rule under a row draws itself in from the left on hover, and stays drawn
+	   while that set is the one on screen. */
+	.sets__row::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 1px;
+		background: var(--fg);
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.sets__row:hover::after,
+	.sets__row--active::after {
+		transform: scaleX(1);
 	}
 
 	.sets__row:hover .sets__name,

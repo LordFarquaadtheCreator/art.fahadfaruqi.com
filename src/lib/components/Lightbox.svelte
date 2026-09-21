@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import type { Photo } from '$lib/utils/metadata';
 	import MetadataDisplay from './MetadataDisplay.svelte';
 
@@ -18,17 +19,32 @@
 
 	let surface = $state<HTMLElement | null>(null);
 	let touchStartX = $state<number | null>(null);
+	let drag = $state(0);
+	let dragging = $state(false);
+	let imageReady = $state(false);
+	// Which way the viewer is travelling, so a swap slides in from the side you came from.
+	let direction = $state(1);
 
 	const photo = $derived(photos[index]);
 	const hasPrevious = $derived(index > 0);
 	const hasNext = $derived(index < photos.length - 1);
 
+	const reduced =
+		typeof window !== 'undefined' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	const fadeMs = (duration: number) => ({ duration: reduced ? 0 : duration });
+
 	function previous() {
-		if (hasPrevious) onNavigate(index - 1);
+		if (!hasPrevious) return;
+		direction = -1;
+		onNavigate(index - 1);
 	}
 
 	function next() {
-		if (hasNext) onNavigate(index + 1);
+		if (!hasNext) return;
+		direction = 1;
+		onNavigate(index + 1);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -58,18 +74,32 @@
 		};
 	});
 
+	// A new photograph starts unresolved, so its pixels fade in rather than pop.
+	$effect(() => {
+		photo?.key;
+		imageReady = false;
+	});
+
 	function handleTouchStart(event: TouchEvent) {
 		touchStartX = event.changedTouches[0]?.clientX ?? null;
+		dragging = true;
 	}
 
-	function handleTouchEnd(event: TouchEvent) {
+	// The photograph follows the finger; the release decides whether it travels.
+	function handleTouchMove(event: TouchEvent) {
 		if (touchStartX === null) return;
-
 		const delta = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+		drag = Math.max(-140, Math.min(140, delta));
+	}
+
+	function handleTouchEnd() {
+		const travelled = drag;
+		dragging = false;
+		drag = 0;
 		touchStartX = null;
 
-		if (Math.abs(delta) < 45) return;
-		if (delta > 0) previous();
+		if (Math.abs(travelled) < 45) return;
+		if (travelled > 0) previous();
 		else next();
 	}
 </script>
@@ -77,38 +107,62 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen && photo}
-	<div class="viewer" role="dialog" aria-modal="true" aria-label="{photo.title} — image viewer">
+	<div
+		class="viewer"
+		role="dialog"
+		aria-modal="true"
+		aria-label="{photo.title} — image viewer"
+		transition:fade={fadeMs(220)}
+	>
 		<button class="viewer__scrim" type="button" onclick={onClose} aria-label="Close viewer"></button>
 
 		<div
 			class="viewer__surface"
+			class:viewer__surface--dragging={dragging}
 			bind:this={surface}
 			tabindex="-1"
 			role="group"
 			aria-label="Photograph"
+			style="--drag: {drag}px"
 			ontouchstart={handleTouchStart}
+			ontouchmove={handleTouchMove}
 			ontouchend={handleTouchEnd}
 		>
 			<figure class="viewer__figure">
-				<img class="viewer__image" src={photo.display} alt={photo.alt} decoding="async" />
+				{#key photo.key}
+					<img
+						class="viewer__image"
+						class:viewer__image--ready={imageReady}
+						style="--from: {direction * 2.5}%"
+						src={photo.display}
+						alt={photo.alt}
+						decoding="async"
+						onload={() => (imageReady = true)}
+						onerror={() => (imageReady = true)}
+					/>
+				{/key}
 			</figure>
 
-			<div class="viewer__panel">
-				<div class="viewer__row">
-					<span class="label num"
-						>{String(photo.number).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span
-					>
-					<span class="label">{photo.set}</span>
+			{#key photo.key}
+				<div class="viewer__panel">
+					<div class="viewer__row" style="--i: 0">
+						<span class="label num"
+							>{String(photo.number).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span
+						>
+						<span class="label">{photo.set}</span>
+					</div>
+
+					<h2 class="viewer__title" style="--i: 1">{photo.title}</h2>
+
+					{#if photo.description}
+						<p class="viewer__description" style="--i: 2">{photo.description}</p>
+					{/if}
+
+					<div class="viewer__exif" style="--i: 3">
+						<MetadataDisplay exif={photo.exif} />
+					</div>
 				</div>
-
-				<h2 class="viewer__title">{photo.title}</h2>
-
-				{#if photo.description}
-					<p class="viewer__description">{photo.description}</p>
-				{/if}
-
-				<MetadataDisplay exif={photo.exif} />
-			</div>
+			{/key}
 		</div>
 
 		<div class="viewer__controls">
@@ -119,7 +173,8 @@
 				disabled={!hasPrevious}
 				aria-label="Previous photograph"
 			>
-				← Prev
+				<span class="viewer__arrow" aria-hidden="true">←</span>
+				<span class="viewer__word">Prev</span>
 			</button>
 			<button
 				class="viewer__control label"
@@ -128,10 +183,12 @@
 				disabled={!hasNext}
 				aria-label="Next photograph"
 			>
-				Next →
+				<span class="viewer__word">Next</span>
+				<span class="viewer__arrow" aria-hidden="true">→</span>
 			</button>
 			<button class="viewer__control label" type="button" onclick={onClose} aria-label="Close viewer">
-				Close ✕
+				<span class="viewer__word">Close</span>
+				<span class="viewer__arrow" aria-hidden="true">✕</span>
 			</button>
 		</div>
 	</div>
@@ -146,7 +203,6 @@
 		align-items: center;
 		justify-content: center;
 		padding: clamp(0.75rem, 3vw, 2.5rem);
-		animation: viewer-in 0.28s ease both;
 	}
 
 	.viewer__scrim {
@@ -164,6 +220,13 @@
 		width: 100%;
 		max-width: 100rem;
 		max-height: 100%;
+		transform: translate3d(var(--drag, 0), 0, 0);
+		transition: transform 0.34s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	/* While the finger is down the surface tracks it exactly; the release animates. */
+	.viewer__surface--dragging {
+		transition: none;
 	}
 
 	.viewer__figure {
@@ -178,7 +241,24 @@
 		max-width: 100%;
 		max-height: min(84vh, 100rem);
 		object-fit: contain;
-		animation: image-in 0.5s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		opacity: 0;
+		transition: opacity 0.32s ease;
+		animation: image-swap 0.52s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
+	.viewer__image--ready {
+		opacity: 1;
+	}
+
+	/* Arrives from the side it was navigated from, and outruns nothing: the outgoing
+	   photograph is gone, so the movement reads as travel rather than a cross-fade. */
+	@keyframes image-swap {
+		from {
+			transform: translate3d(var(--from, 2.5%), 0, 0);
+		}
+		to {
+			transform: translate3d(0, 0, 0);
+		}
 	}
 
 	.viewer__panel {
@@ -187,6 +267,23 @@
 		gap: 0.75rem;
 		align-self: center;
 		padding-bottom: 0.5rem;
+	}
+
+	/* The caption block catches up with the photograph, one line at a time. */
+	.viewer__panel > * {
+		animation: panel-in 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		animation-delay: calc(var(--i, 0) * 55ms + 90ms);
+	}
+
+	@keyframes panel-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 0.5rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
 	}
 
 	.viewer__row {
@@ -214,7 +311,7 @@
 	.viewer__controls {
 		position: absolute;
 		left: clamp(0.75rem, 3vw, 2.5rem);
-		right: clamp(0.75rem, 3vw, 2.5rem);
+		right: clamp(0.75rem, 2vw, 1.5rem);
 		bottom: clamp(0.75rem, 2vw, 1.5rem);
 		display: flex;
 		justify-content: space-between;
@@ -222,6 +319,9 @@
 	}
 
 	.viewer__control {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.4rem;
 		color: var(--muted);
 		transition: color 0.2s ease;
 	}
@@ -230,29 +330,23 @@
 		color: var(--fg);
 	}
 
+	/* The arrow leans the way it is about to take you. */
+	.viewer__arrow {
+		display: inline-block;
+		transition: transform 0.28s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.viewer__control:hover:not(:disabled) .viewer__arrow {
+		transform: translate3d(-0.18rem, 0, 0);
+	}
+
+	.viewer__control:last-child:hover .viewer__arrow {
+		transform: translate3d(0.18rem, 0, 0) rotate(45deg);
+	}
+
 	.viewer__control:disabled {
 		opacity: 0.35;
 		cursor: default;
-	}
-
-	@keyframes viewer-in {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-
-	@keyframes image-in {
-		from {
-			opacity: 0;
-			transform: scale(0.985);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
 	}
 
 	@media (max-width: 900px) {

@@ -5,8 +5,14 @@
 
 	let {
 		sets,
+		pass = 0,
 		onOpen
-	}: { sets: PhotoSet[]; onOpen: (photo: Photo, set: PhotoSet) => void } = $props();
+	}: { sets: PhotoSet[]; pass?: number; onOpen: (photo: Photo, set: PhotoSet) => void } = $props();
+
+	// Two identical entrances alternating by pass, because a CSS animation only restarts
+	// when its name changes — this is what re-plays the wipe on every filter change
+	// without re-mounting a single plate.
+	const wipe = $derived(pass % 2 === 0 ? 'a' : 'b');
 
 	// Starts each cell's entrance only once it is actually on screen. A cell already in
 	// view is left alone, so the animation can never be the reason a photograph is
@@ -38,9 +44,9 @@
 	const pad = (value: number) => String(value).padStart(2, '0');
 </script>
 
-<div class="gallery">
+<div class="gallery" data-pass={wipe}>
 	{#each sets as set, setIndex (set.slug)}
-		<section class="set" id={set.slug}>
+		<section class="set" id={set.slug} style="--set: {setIndex}">
 			<header class="set__head shell">
 				<span class="label num">{pad(setIndex + 1)}</span>
 				<h2 class="set__name">{set.name}</h2>
@@ -65,6 +71,42 @@
 <style>
 	.gallery {
 		padding-block: clamp(2rem, 6vh, 5rem) var(--block);
+		/* The masthead is sticky, so a scroll to the grid has to clear it. */
+		scroll-margin-top: 3.5rem;
+	}
+
+	/* Filtering re-plays the incoming sets, one after another. The two names are
+	   identical on purpose; see the wipe derivation in the script. */
+	.gallery[data-pass='a'] > .set {
+		animation: set-in-a 0.62s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		animation-delay: calc(var(--set, 0) * 80ms);
+	}
+
+	.gallery[data-pass='b'] > .set {
+		animation: set-in-b 0.62s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		animation-delay: calc(var(--set, 0) * 80ms);
+	}
+
+	@keyframes set-in-a {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 1.25rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+
+	@keyframes set-in-b {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 1.25rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
 	}
 
 	.set + .set {
