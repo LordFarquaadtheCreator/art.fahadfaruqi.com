@@ -1,0 +1,12 @@
+name = "metadata-api"
+main = "src/index.js"
+compatibility_date = "2026-09-21"
+workers_dev = false
+
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "assets"
+
+[[routes]]
+pattern = "assets.fahadfaruqi.com/api/*"
+zone_name = "fahadfaruqi.com"
