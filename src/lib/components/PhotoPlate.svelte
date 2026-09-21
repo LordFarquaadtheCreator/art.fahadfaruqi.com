@@ -131,24 +131,12 @@
 	.plate__exif {
 		grid-column: 2;
 		font-size: 0.6875rem;
-		color: var(--muted);
-		opacity: 0;
-		transform: translateY(-0.15rem);
-		transition:
-			opacity 0.35s ease,
-			transform 0.35s ease;
+		color: var(--faint);
+		transition: color 0.3s ease;
 	}
 
 	.plate:hover .plate__exif,
 	.plate__frame:focus-visible + .plate__caption .plate__exif {
-		opacity: 1;
-		transform: none;
-	}
-
-	@media (hover: none), (max-width: 700px) {
-		.plate__exif {
-			opacity: 1;
-			transform: none;
-		}
+		color: var(--muted);
 	}
 </style>

@@ -14,13 +14,13 @@
 	--bg-elev: #121211;
 	--fg: #f2f1ee;
 	--muted: #a6a29c;
-	--faint: #6f6b65;
+	--faint: #857f78;
 	--line: rgba(242, 241, 238, 0.13);
 	--line-2: rgba(242, 241, 238, 0.34);
 	--scrim: rgba(8, 8, 8, 0.97);
-	--grain-opacity: 0.19;
+	--grain-opacity: 0.23;
 	--grain-blend: overlay;
-	--glow-opacity: 0.6;
+	--glow-opacity: 0.68;
 	--glow-blend: screen;
 	--vignette: rgba(0, 0, 0, 0.55);
 }
