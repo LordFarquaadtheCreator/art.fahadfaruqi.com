@@ -79,7 +79,10 @@ deployed site.
 `vite preview` indexes `build/` when it starts. Rebuilding while it runs leaves it
 serving the previous HTML and, for hashed filenames, 404s or stale bytes. Symptom:
 a module you just built is served with a different hash or a 9-byte body. Fix:
-restart the preview process after every rebuild. Always confirm what is actually
+restart the preview process after every rebuild. Restart it with a pattern that
+cannot match the shell you are restarting from — `pkill -f '[v]ite preview'`, not
+`pkill -f 'vite preview'`: the latter matches the chained command's own arguments and
+kills the wrapper shell before the new server starts. Always confirm what is actually
 being served before drawing conclusions from the browser:
 
 ```sh
