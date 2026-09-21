@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { exifLine } from '$lib/utils/exif';
+	import { registerPlate } from '$lib/webgl/layer';
 	import type { Photo } from '$lib/utils/metadata';
 
 	let { photo, onOpen }: { photo: Photo; onOpen: (photo: Photo) => void } = $props();
@@ -25,6 +26,7 @@
 		class="plate__frame"
 		class:plate__frame--loaded={loaded}
 		type="button"
+		use:registerPlate
 		style={ratio
 			? `aspect-ratio: ${ratio}; --ratio: ${ratio}`
 			: `--ratio: ${3 / 2}`}
@@ -41,6 +43,8 @@
 		<img
 			class="plate__image"
 			src={photo.grid}
+			srcset="{photo.grid} 800w, {photo.wide} 1600w, {photo.display} 2200w"
+			sizes="(min-width: 1024px) 55vw, 100vw"
 			alt={photo.alt}
 			loading="lazy"
 			decoding="async"
@@ -100,6 +104,12 @@
 
 	.plate__frame--loaded .plate__image {
 		opacity: 1;
+	}
+
+	/* The WebGL quad is drawing this plate's pixels, so the DOM copy steps aside. The
+	   attribute is only set once the quad has actually rendered a frame. */
+	:global(.plate__frame[data-gl='live']) .plate__image {
+		opacity: 0;
 	}
 
 	.plate__frame:hover .plate__image,

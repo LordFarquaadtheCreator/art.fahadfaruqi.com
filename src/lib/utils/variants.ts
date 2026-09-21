@@ -4,9 +4,9 @@
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE ?? 'https://assets.fahadfaruqi.com';
 
-export type Variant = 'display' | 'grid' | 'lqip';
+export type Variant = 'display' | 'wide' | 'grid' | 'lqip';
 
-const DIR = { display: 'w2200', grid: 'w800', lqip: 'lqip' } as const;
+const DIR = { display: 'w2200', wide: 'w1600', grid: 'w800', lqip: 'lqip' } as const;
 
 export function derivativeKey(variant: Variant, key: string): string {
 	return `d/${DIR[variant]}/${key.replace(/\.[^./]+$/, '')}.webp`;

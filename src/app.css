@@ -109,6 +109,31 @@ img {
 	padding-inline: var(--gutter);
 }
 
+/* The WebGL plate layer appends its own canvas. It sits above the photographs but below
+   the masthead and the viewer, and never takes pointer events. */
+.plate-canvas {
+	position: fixed;
+	inset: 0;
+	z-index: 4;
+	pointer-events: none;
+}
+
+/*
+ * Escape hatch. Setting data-webgl="off" on <html> — by hand in the console, or by
+ * anything that needs the plain document — stops the layer and hands every photograph
+ * back to its own <img>. Nothing else in the site reads this flag.
+ *
+ * !important because the rule this overrides is scoped — `.plate__image.svelte-hash`
+ * carries an extra class, so no outside selector of reasonable length outranks it.
+ */
+html[data-webgl='off'] .plate-canvas {
+	display: none !important;
+}
+
+html[data-webgl='off'] .plate__frame .plate__image {
+	opacity: 1 !important;
+}
+
 .label {
 	font-family: var(--font-mono);
 	font-size: 0.6875rem;

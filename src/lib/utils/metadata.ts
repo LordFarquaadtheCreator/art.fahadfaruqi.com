@@ -28,6 +28,7 @@ export interface Photo {
 	key: string;
 	original: string;
 	display: string;
+	wide: string;
 	grid: string;
 	lqip: string;
 	size: number;
@@ -57,6 +58,7 @@ export function toPhoto(object: ApiObject): Photo {
 		key: object.key,
 		original: object.url,
 		display: derivativeUrl('display', object.key),
+		wide: derivativeUrl('wide', object.key),
 		grid: derivativeUrl('grid', object.key),
 		lqip: derivativeUrl('lqip', object.key),
 		size: object.size,
