@@ -24,7 +24,6 @@
         .container {
             text-align: center;
             color: white;
-            animation: fadeIn 1s ease-out;
         }
 
         h1 {
@@ -42,28 +41,31 @@
             animation: slideUp 0.8s ease-out 0.4s both;
         }
 
-        .dots {
+        .construction-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: slideUp 0.8s ease-out 0.1s both, bounce 2s ease-in-out infinite;
+        }
+
+        .tools {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 20px;
             margin-top: 2rem;
             animation: slideUp 0.8s ease-out 0.6s both;
         }
 
-        .dot {
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            animation: pulse 1.5s ease-in-out infinite;
+        .tool {
+            font-size: 2rem;
+            animation: wiggle 1.5s ease-in-out infinite;
         }
 
-        .dot:nth-child(2) {
-            animation-delay: 0.2s;
+        .tool:nth-child(2) {
+            animation-delay: 0.3s;
         }
 
-        .dot:nth-child(3) {
-            animation-delay: 0.4s;
+        .tool:nth-child(3) {
+            animation-delay: 0.6s;
         }
 
         @keyframes fadeIn {
@@ -86,35 +88,49 @@
             }
         }
 
-        @keyframes pulse {
+        @keyframes bounce {
             0%, 100% {
-                transform: scale(1);
-                opacity: 1;
+                transform: translateY(0);
             }
             50% {
-                transform: scale(1.5);
-                opacity: 0.5;
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes wiggle {
+            0%, 100% {
+                transform: rotate(-10deg);
+            }
+            50% {
+                transform: rotate(10deg);
             }
         }
 
         @media (max-width: 600px) {
+            .construction-icon {
+                font-size: 4rem;
+            }
             h1 {
                 font-size: 2rem;
             }
             .subtitle {
                 font-size: 1rem;
             }
+            .tool {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="construction-icon">👷</div>
         <h1>UNDER CONSTRUCTION</h1>
         <p class="subtitle">Art portfolio coming soon</p>
-        <div class="dots">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
+        <div class="tools">
+            <span class="tool">🔨</span>
+            <span class="tool">🔧</span>
+            <span class="tool">⚙️</span>
         </div>
     </div>
 </body>
