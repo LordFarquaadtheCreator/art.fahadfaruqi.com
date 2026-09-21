@@ -55,7 +55,6 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `metadata-api/` | the Worker that serves `/api/metadata` |
 | `scripts/` | Go CLI for managing the bucket. **Go only** — see Rules |
 | `website-draft.md` | the design brief this build follows, including the reference |
-| `index.html` | historical placeholder from before the app existed; not served (see Leftovers) |
 
 ## Local development
 
@@ -262,10 +261,6 @@ OPTIONS, trailing slash, 404s, CORS on errors).
 
 ## Leftovers and open items
 
-- `index.html` at the repository root is the pre-existing "under construction" page.
-  GitHub Pages no longer serves it (`build_type: workflow`), but deleting it was not
-  part of this work. It is the only file in the repo that describes the site
-  incorrectly.
 - `package.json` still carries dependencies from the original scaffold that nothing
   imports: `three`, `@types/three`, `threlte`, `svelte-lightbox`, `svelte-bricks`,
   `@humanspeak/svelte-motion`. They are dead weight — several MB of install — and were
