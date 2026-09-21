@@ -8,8 +8,15 @@
 		onOpen
 	}: { sets: PhotoSet[]; onOpen: (photo: Photo, set: PhotoSet) => void } = $props();
 
-	// Starts each cell's entrance only once it is actually on screen.
+	// Starts each cell's entrance only once it is actually on screen. A cell already in
+	// view is left alone, so the animation can never be the reason a photograph is
+	// missing — it is only ever an entrance for what has not been seen yet.
 	function reveal(node: HTMLElement) {
+		const box = node.getBoundingClientRect();
+		if (box.top < window.innerHeight && box.bottom > 0) {
+			return { destroy: () => {} };
+		}
+
 		node.dataset.revealed = 'false';
 
 		const observer = new IntersectionObserver(
@@ -91,18 +98,19 @@
 
 	.cell {
 		grid-column: 1 / -1;
-		opacity: 0;
-		transform: translate3d(0, 1.75rem, 0);
+		opacity: 1;
 		transition:
 			opacity 0.9s ease,
 			transform 0.9s cubic-bezier(0.16, 0.84, 0.28, 1);
 		transition-delay: calc(var(--order) * 70ms);
 	}
 
-	/* Set by the reveal action at runtime, so the compiler cannot see the attribute. */
-	:global(.cell[data-revealed='true']) {
-		opacity: 1;
-		transform: none;
+	/* Set by the reveal action at runtime, so the compiler cannot see the attribute.
+	   Only a cell the script has explicitly claimed is hidden — if the script never
+	   runs, or dies, every photograph is on screen instead of none. */
+	:global(.cell[data-revealed='false']) {
+		opacity: 0;
+		transform: translate3d(0, 1.75rem, 0);
 	}
 
 	.cell + .cell {

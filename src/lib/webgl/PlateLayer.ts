@@ -226,6 +226,12 @@ export class PlateLayer {
 		this.enforceTextureBudget();
 		this.renderer.render(this.scene, this.camera);
 
+		// The canvas stays hidden until a frame has actually been produced, so a layer
+		// that never draws cannot cover the page it was meant to enhance.
+		if (!this.canvas.dataset.ready) {
+			this.canvas.dataset.ready = '';
+		}
+
 		const flag = drawable > 0 ? 'on' : 'off';
 		if (document.documentElement.dataset.webgl !== flag) {
 			document.documentElement.dataset.webgl = flag;

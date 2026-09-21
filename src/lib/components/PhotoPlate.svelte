@@ -106,12 +106,9 @@
 		opacity: 1;
 	}
 
-	/* The WebGL quad is drawing this plate's pixels, so the DOM copy steps aside. The
-	   attribute is only set once the quad has actually rendered a frame. */
-	:global(.plate__frame[data-gl='live']) .plate__image {
-		opacity: 0;
-	}
-
+	/* The quad draws over this image rather than replacing it. The image stays the
+	   photograph: if the layer cannot start, cannot fetch a plate's bytes, or loses its
+	   context, there is simply no effect — never a missing picture. */
 	.plate__frame:hover .plate__image,
 	.plate__frame:focus-visible .plate__image {
 		transform: scale(1.025);

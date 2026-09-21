@@ -171,11 +171,13 @@ canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
 - Every tick reads each frame's `getBoundingClientRect()` and copies it onto the
   plane. The layer knows nothing about layout, so the offset grid, the portrait
   spans and any future CSS change are picked up for free.
-- **The `<img>` is the photograph, not a fallback.** It is hidden
-  (`data-gl="live"`) only after its quad has actually drawn pixels, and it is
-  never gated on CORS: the layer fetches its own bytes (`fetch` →
-  `createImageBitmap` → `THREE.Texture`), so if CORS breaks, or the bytes are
-  unreachable, the plate simply stays a plain image instead of blanking.
+- **The layer draws over the photograph, never instead of it.** Each frame's `<img>` is
+  always on screen and always loaded; the quad is composited on top of it. The layer
+  therefore has no way to blank the gallery: if it cannot start, cannot fetch a plate's
+  bytes, or loses its context, the effect is simply absent. `data-gl="live"` marks a
+  plate the loop has drawn for, for diagnostics only — no CSS hides anything on it.
+- The canvas itself is `visibility: hidden` until the loop has produced its first frame,
+  so a layer that never draws cannot cover the page either.
 - Textures are released for frames more than `MARGIN` (400 CSS px) outside the
   viewport, and `dropTexture` closes the `ImageBitmap`.
 - `const EFFECTS` in `PlateLayer.ts` is the master switch for displacement and
@@ -208,6 +210,13 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
 
 ### Traps that cost time here
 
+- **Never let CSS hide content that only JavaScript can reveal.** The grid cells used
+  to be `opacity: 0` with a `[data-revealed='true']` rule the reveal observer set — so
+  any failure to hydrate, or a bundle that did not load, left every photograph invisible
+  while all the text rendered. That is a mostly-blank page, and in the light theme it
+  reads as a white one. The default state is now visible: the CSS hides a cell only when
+  the action has explicitly claimed it (`[data-revealed='false']`), and a cell already in
+  the viewport is never claimed at all.
 - **Never alias a package to itself.** `svelte.config.js` briefly carried
   `kit: { alias: { three: 'three' } }`, added by mistake in the redesign commit.
   Nothing imported `three` then, so it sat there until the layer did — and the
@@ -315,9 +324,10 @@ OPTIONS, trailing slash, 404s, CORS on errors).
 ### Pitfalls when verifying in a headless or background tab
 
 - `loading="lazy"` images and the `IntersectionObserver` reveal do not fire in a
-  hidden tab, so the grid looks empty and cells stay at `opacity: 0`. To check the
-  markup and URLs anyway, force the loads:
-  `document.querySelectorAll('.plate__image').forEach(i => { const s = i.src; i.removeAttribute('loading'); i.src = s; })`
+  hidden tab, so the grid looks empty: cells that are below the fold stay at
+  `opacity: 0` until they are observed. Force the loads and the reveal state:
+  `document.querySelectorAll('.plate__image').forEach(i => { const s = i.getAttribute('src'); i.removeAttribute('loading'); i.src = s; })`
+  and `document.querySelectorAll('.cell').forEach(c => { if (c.dataset.revealed === 'false') c.dataset.revealed = 'true'; })`
 - The layout breakpoint is 1024px. A small automation window (≈900px) silently
   renders the single-column layout — set the viewport to 1440×900 first
   (`Emulation.setDeviceMetricsOverride`) or you will conclude the offset grid is
