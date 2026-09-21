@@ -48,6 +48,33 @@ after that comes from the object's custom metadata, with the metadata keys used
 as-is, so `title` in this example was uploaded as the `title` metadata header. An
 object uploaded without any custom metadata returns just the five generated fields.
 
+Custom metadata is only present because `listAllObjects()` passes
+`include: ["customMetadata", "httpMetadata"]` — the R2 binding omits both from
+list results unless they are requested explicitly. Dropping that option silently
+degrades every response to the five generated fields.
+
+Objects under the `d/` prefix are skipped: they are resized derivatives of the
+originals (see the "Derivatives" section below), not gallery items.
+
+## Derivatives
+
+The originals in the bucket are full-resolution PNGs (110–140 MB each) and are not
+usable as gallery media. Every original is accompanied by three resized WebP
+derivatives, generated offline and uploaded to the same bucket:
+
+| Key | Width | Purpose |
+| --- | --- | --- |
+| `d/w2200/<name>.webp` | 2200 px | lightbox / hero image |
+| `d/w800/<name>.webp` | 800 px | gallery grid cell |
+| `d/lqip/<name>.webp` | 24 px | blur-up placeholder, also carries the aspect ratio |
+
+The frontend builds those keys from the original's key (`src/lib/utils/variants.ts`),
+so the naming convention is the contract between whatever generates the derivatives
+and the site. Regenerating derivatives for a newly uploaded original means uploading
+the three keys above with `Content-Type: image/webp` and a long-lived
+`Cache-Control`; anything for the gallery itself needs the original uploaded with
+its `title`, `altText`, `description`, `set` and `number` metadata intact.
+
 ## Deploy
 
 ```sh

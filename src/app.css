@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-sans:
+		'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, 'Roboto Mono', monospace;
+}
+
+/* ---------------------------------------------------------------- palette */
+
+:root,
+[data-theme='dark'] {
+	--bg: #0a0a0a;
+	--bg-elev: #121211;
+	--fg: #f2f1ee;
+	--muted: #a6a29c;
+	--faint: #6f6b65;
+	--line: rgba(242, 241, 238, 0.13);
+	--line-2: rgba(242, 241, 238, 0.34);
+	--scrim: rgba(8, 8, 8, 0.97);
+	--grain-opacity: 0.19;
+	--grain-blend: overlay;
+	--glow-opacity: 0.6;
+	--glow-blend: screen;
+	--vignette: rgba(0, 0, 0, 0.55);
+}
+
+[data-theme='light'] {
+	--bg: #f2f1ed;
+	--bg-elev: #e9e8e3;
+	--fg: #101010;
+	--muted: #6a6763;
+	--faint: #a5a29d;
+	--line: rgba(16, 16, 16, 0.14);
+	--line-2: rgba(16, 16, 16, 0.38);
+	--scrim: rgba(242, 241, 237, 0.94);
+	--grain-opacity: 0.08;
+	--grain-blend: multiply;
+	--glow-opacity: 0.5;
+	--glow-blend: multiply;
+	--vignette: rgba(60, 52, 44, 0.18);
+}
+
+/* ---------------------------------------------------------------- base */
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-sans);
+	font-size: 1rem;
+	line-height: 1.45;
+	font-synthesis-weight: none;
+	overflow-x: hidden;
+	transition:
+		background-color 0.4s ease,
+		color 0.4s ease;
+}
+
+::selection {
+	background: var(--fg);
+	color: var(--bg);
+}
+
+:focus-visible {
+	outline: 1px solid var(--line-2);
+	outline-offset: 3px;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+	background: none;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+}
+
+img {
+	display: block;
+	max-width: 100%;
+}
+
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+	--gutter: clamp(1rem, 3.2vw, 3rem);
+	--block: clamp(4rem, 12vh, 11rem);
+	--display: clamp(3.25rem, 13.5vw, 12rem);
+	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
+}
+
+.shell {
+	padding-inline: var(--gutter);
+}
+
+.label {
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.label--fg {
+	color: var(--fg);
+}
+
+.rule {
+	height: 1px;
+	background: var(--line);
+	border: 0;
+	margin: 0;
+}
+
+.num {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-delay: 0ms !important;
+		transition-duration: 0.001ms !important;
+	}
+}

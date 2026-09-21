@@ -9,6 +9,7 @@ const PAGE_SIZE = 1000; // R2 list page size
 const MAX_OBJECTS = 10000; // refuse to build a partial listing past this
 const ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 const CDN_BASE = "https://assets.fahadfaruqi.com";
+const DERIVATIVE_PREFIX = "d/";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -108,8 +109,17 @@ async function listAllObjects(env) {
   const objects = [];
   let cursor;
   do {
-    const listing = await env.ASSETS_BUCKET.list({ cursor, limit: PAGE_SIZE });
+    // Custom and HTTP metadata are omitted from list results unless requested
+    // explicitly; without `include` the API would return five bare fields per object.
+    const listing = await env.ASSETS_BUCKET.list({
+      cursor,
+      limit: PAGE_SIZE,
+      include: ["customMetadata", "httpMetadata"],
+    });
     for (const obj of listing.objects) {
+      // d/<variant>/<name>.webp objects are generated derivatives of the originals,
+      // not gallery items, and must not appear in the listing.
+      if (obj.key.startsWith(DERIVATIVE_PREFIX)) continue;
       if (objects.length >= MAX_OBJECTS) {
         // Fail loudly rather than serve a silently incomplete gallery.
         throw new Error(
