@@ -1,13 +1,13 @@
 <script lang="ts">
 	import '@fontsource-variable/inter';
-	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 
 	let { children } = $props();
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<!-- Same mark as the main site at fahadfaruqi.com. -->
+	<link rel="icon" href="/favicon.png" />
 </svelte:head>
 
 {@render children()}
