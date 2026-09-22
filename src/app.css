@@ -182,5 +182,8 @@ html[data-webgl='off'] .plate__frame .plate__image {
 		animation-delay: 0ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.001ms !important;
+		/* Delays are waits, so they go too: without this the morph's lines would still sit
+		   out 0.32s before fading and the band would still close 0.5s late. */
+		transition-delay: 0s !important;
 	}
 }

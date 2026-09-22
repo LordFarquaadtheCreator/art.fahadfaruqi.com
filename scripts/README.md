@@ -66,6 +66,10 @@ from a PNG — and skips the prompts entirely. It also carries the original's up
 into custom metadata, because R2's own timestamp resets on every upload and the gallery
 reads that value as the set's date.
 
+`EXIF.Extract` reads by extension and has no `.webp` case, so a WebP uploaded without
+`--inherit` arrives with an empty EXIF map (and a warning). Anything re-encoded from an
+object that already carries metadata should go through `--inherit`.
+
 ```sh
 ./manage-images create -d ~/exports/webp -p '*.webp' --inherit .png
 ```

@@ -16,50 +16,12 @@
 	// when its name changes — this is what re-plays the wipe on every filter change
 	// without re-mounting a single plate.
 	const wipe = $derived(pass % 2 === 0 ? 'a' : 'b');
-
-	// Which sticky set headers are currently pinned. The browser has no state for this,
-	// so a one-pixel sentinel above each header carries it: once the sentinel is above
-	// the masthead's line, that header is stuck and can sink like the masthead does.
-	let pinned = $state<Record<string, boolean>>({});
-
-	function sticky(node: HTMLElement, notify: (value: boolean) => void) {
-		if (typeof IntersectionObserver === 'undefined') {
-			return { destroy: () => {} };
-		}
-
-		const root = document.documentElement;
-		const gap = parseFloat(getComputedStyle(root).fontSize) || 16;
-		const masthead = parseFloat(getComputedStyle(root).getPropertyValue('--masthead-h')) || 3;
-
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				notify(!entry.isIntersecting && entry.boundingClientRect.top < 0);
-			},
-			{ rootMargin: `-${masthead * gap}px 0px 0px 0px` }
-		);
-
-		observer.observe(node);
-
-		return { destroy: () => observer.disconnect() };
-	}
-
-	const pad = (value: number) => String(value).padStart(2, '0');
 </script>
 
 <div class="gallery" data-pass={wipe}>
 	{#each sets as set, setIndex (set.slug)}
 		<section class="set" id={set.slug} style="--set: {setIndex}">
 			<SetCard {set} index={setIndex} />
-			<span
-				class="set__sentinel"
-				aria-hidden="true"
-				use:sticky={(value: boolean) => (pinned[set.slug] = value)}
-			></span>
-			<header class="set__head shell" class:set__head--pinned={pinned[set.slug]}>
-				<span class="label num">{pad(setIndex + 1)}</span>
-				<h2 class="set__name">{set.name}</h2>
-				<span class="label num">{set.photos.length} photographs</span>
-			</header>
 
 			<div class="set__grid shell">
 				{#each set.photos as photo, index (photo.key)}
@@ -121,40 +83,6 @@
 
 	.set + .set {
 		margin-top: var(--block);
-	}
-
-	.set__sentinel {
-		display: block;
-		height: 1px;
-		margin-bottom: -1px;
-	}
-
-	.set__head {
-		position: sticky;
-		/* Above the WebGL canvas, so a sticky set label is never drawn over by a
-		   photograph passing underneath it. */
-		z-index: 5;
-		top: var(--masthead-h);
-		display: flex;
-		align-items: baseline;
-		gap: 1rem;
-		padding-block: 0.75rem;
-		border-bottom: 1px solid var(--line);
-		background: color-mix(in srgb, var(--bg) 82%, transparent);
-		backdrop-filter: blur(10px);
-		margin-bottom: clamp(1.5rem, 5vh, 4rem);
-		transition:
-			background-color 0.4s ease,
-			padding 0.4s cubic-bezier(0.16, 0.84, 0.28, 1),
-			box-shadow 0.4s ease;
-	}
-
-	/* Pinned, the header tightens and firms up, so a set label that stops moving still
-	   reads as attached to the photographs passing under it. */
-	.set__head--pinned {
-		background: color-mix(in srgb, var(--bg) 94%, transparent);
-		padding-block: 0.5rem;
-		box-shadow: 0 1px 0 var(--line);
 	}
 
 	/* The parallax carrier. Keeping the drift on a wrapper means the cell's own
