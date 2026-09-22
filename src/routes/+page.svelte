@@ -102,8 +102,6 @@
 		}
 	}
 
-	const latest = (photos_: Photo[]) =>
-		photos_.reduce((newest, photo) => (photo.uploaded > newest ? photo.uploaded : newest), '').slice(0, 10);
 </script>
 
 <svelte:head>
@@ -150,38 +148,6 @@
 			<p class="state__title">The index could not be loaded.</p>
 			<p class="state__detail num">{failure}</p>
 			<button class="state__retry label" type="button" onclick={() => load()}>Retry</button>
-		</section>
-	{:else if status === 'loading'}
-		<section class="sets shell" aria-hidden="true">
-			<div class="skeleton">
-				{#each Array(6) as _, index (index)}
-					<span class="skeleton__cell" style="--order: {index}"></span>
-				{/each}
-			</div>
-		</section>
-	{:else}
-		<section class="sets shell" aria-label="Sets" use:reveal>
-			<div class="sets__head">
-				<span class="label">Sets</span>
-				<span class="label">Photographs</span>
-				<span class="label">Latest</span>
-			</div>
-
-			{#each sets as set, index (set.slug)}
-				<button
-					class="sets__row"
-					class:sets__row--active={activeSet === set.slug}
-					type="button"
-					onclick={() => setFilter(activeSet === set.slug ? 'all' : set.slug)}
-				>
-					<span class="sets__name">
-						<span class="label num">{String(index + 1).padStart(2, '0')}</span>
-						{set.name}
-					</span>
-					<span class="num sets__count" use:count={set.photos.length}></span>
-					<span class="num sets__date">{latest(set.photos)}</span>
-				</button>
-			{/each}
 		</section>
 	{/if}
 
@@ -405,117 +371,6 @@
 		}
 	}
 
-	.sets {
-		padding-bottom: clamp(2rem, 6vh, 4rem);
-	}
-
-	/* The table arrives row by row, whether it is the first paint or the skeleton
-	   being replaced. */
-	.sets__row {
-		animation: row-in 0.6s cubic-bezier(0.16, 0.84, 0.28, 1) both;
-	}
-
-	.sets__row:nth-child(2) {
-		animation-delay: 0.09s;
-	}
-
-	.sets__row:nth-child(3) {
-		animation-delay: 0.18s;
-	}
-
-	.sets__row:nth-child(4) {
-		animation-delay: 0.27s;
-	}
-
-	.sets__row:nth-child(n + 5) {
-		animation-delay: 0.36s;
-	}
-
-	@keyframes row-in {
-		from {
-			opacity: 0;
-			transform: translate3d(0, 0.75rem, 0);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
-	}
-
-	.sets__head,
-	.sets__row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 8rem 8rem;
-		align-items: baseline;
-		gap: 1rem;
-		width: 100%;
-		text-align: left;
-	}
-
-	.sets__head {
-		padding-bottom: 0.5rem;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.sets__head .label:not(:first-child),
-	.sets__count,
-	.sets__date {
-		text-align: right;
-	}
-
-	.sets__row {
-		position: relative;
-		padding-block: 0.9rem;
-		border-bottom: 1px solid var(--line);
-		transition: color 0.25s ease;
-	}
-
-	/* The rule under a row draws itself in from the left on hover, and stays drawn
-	   while that set is the one on screen. */
-	.sets__row::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -1px;
-		height: 1px;
-		background: var(--fg);
-		transform: scaleX(0);
-		transform-origin: left center;
-		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.sets__row:hover::after,
-	.sets__row--active::after {
-		transform: scaleX(1);
-	}
-
-	.sets__row:hover .sets__name,
-	.sets__row--active .sets__name {
-		color: var(--fg);
-	}
-
-	.sets__row--active .sets__name {
-		font-weight: 500;
-	}
-
-	.sets__name {
-		display: flex;
-		align-items: baseline;
-		gap: 1rem;
-		color: var(--muted);
-		font-size: clamp(1.125rem, 2.4vw, 1.75rem);
-		letter-spacing: -0.02em;
-		text-transform: lowercase;
-		transition: color 0.25s ease;
-	}
-
-	.sets__count,
-	.sets__date {
-		font-size: 0.75rem;
-		color: var(--muted);
-	}
-
 	.state {
 		padding-block: var(--block);
 	}
@@ -560,29 +415,6 @@
 
 	.state__retry:active {
 		transform: translate3d(0, 0, 0) scale(0.98);
-	}
-
-	.skeleton {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-		gap: clamp(0.75rem, 1.5vw, 1.75rem);
-	}
-
-	.skeleton__cell {
-		aspect-ratio: 3 / 2;
-		background: var(--bg-elev);
-		animation: pulse 2.4s ease-in-out infinite;
-		animation-delay: calc(var(--order) * 140ms);
-	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 0.4;
-		}
-		50% {
-			opacity: 0.85;
-		}
 	}
 
 	.footer {
@@ -651,9 +483,9 @@
 		transform: translate3d(0, -0.2rem, 0);
 	}
 
-	/* A band of type running under the index, so the page announces itself once between
-	   the list of sets and the photographs. Two identical runs translated by exactly half
-	   the track make the loop seamless; hover holds it still. */
+	/* A band of type running under the hero, so the page announces itself once before
+	   the photographs. Two identical runs translated by exactly half the track make the
+	   loop seamless; hover holds it still. */
 	.marquee {
 		position: relative;
 		overflow: hidden;
@@ -713,17 +545,4 @@
 		}
 	}
 
-	@media (max-width: 700px) {
-		.sets__head {
-			display: none;
-		}
-
-		.sets__row {
-			grid-template-columns: minmax(0, 1fr) auto;
-		}
-
-		.sets__date {
-			display: none;
-		}
-	}
 </style>

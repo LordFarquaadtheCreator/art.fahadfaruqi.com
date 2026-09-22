@@ -333,6 +333,12 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   by `:nth-child(even)`. `PhotoPlate` sets that class from the LQIP's aspect ratio.
   In the single-column layout, `max-width: calc(var(--ratio) * 74vh)` stops a portrait
   from being several screens tall.
+- **One way to filter.** `SetIndex` in the masthead is the only navigation. The hero
+  used to carry a second, larger copy of the same list — a set table with counts and
+  dates — and it was removed: two controls doing the same job made the top of the page
+  read as a contents page rather than as a photograph. The hero is the name and the
+  three-line credit, then the band, then the work. There is no loading skeleton any
+  more either; the hero's count line reports the fetch instead.
 - **Layers.** `Atmosphere.svelte` renders two fixed layers: `.backdrop` (z-index 0)
   holding the pointer-tracked glow and the two vignettes, and `.overlay` (z-index 6)
   holding the two grain plates. The glow is a light source **behind** the page, so
