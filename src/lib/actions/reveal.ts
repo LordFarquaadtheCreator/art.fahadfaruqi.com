@@ -4,6 +4,11 @@
 // never runs, or dies, everything is visible instead of nothing: an entrance may never
 // be the reason a photograph is missing.
 export function reveal(node: HTMLElement, margin = '-8%') {
+	// Without an observer there is no way to un-hide what this would hide, so hide nothing.
+	if (typeof IntersectionObserver === 'undefined') {
+		return { destroy: () => {} };
+	}
+
 	const box = node.getBoundingClientRect();
 
 	if (box.top < window.innerHeight && box.bottom > 0) {
