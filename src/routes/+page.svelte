@@ -18,6 +18,7 @@
 	let activeSet = $state('all');
 	let viewerOpen = $state(false);
 	let viewerIndex = $state(0);
+	let copied = $state(false);
 
 	const sets = $derived(groupBySet(photos));
 	const visibleSets = $derived(
@@ -105,13 +106,14 @@
 </script>
 
 <svelte:head>
-	<title>Fahad Faruqi — Photographs</title>
+	<title>Fahad's Art</title>
 	<meta
 		name="description"
-		content="Selected photographs by Fahad Faruqi, grouped by set, with the camera and exposure data behind each frame."
+		content="Selected photographs by Fahad Faruqi. All human-made."
 	/>
 </svelte:head>
 
+<!-- Banner -->
 <header class="masthead" class:masthead--scrolled={scrolled}>
 	<div class="masthead__inner shell">
 		<a class="masthead__mark" href="#top">Fahad Faruqi</a>
@@ -122,6 +124,7 @@
 </header>
 
 <main id="top">
+	<!-- Hero -->
 	<section class="hero shell">
 		<h1 class="hero__name" aria-label="Fahad Faruqi">
 			<SplitText text="Fahad Faruqi" />
@@ -129,7 +132,7 @@
 
 		<div class="hero__meta">
 			<p class="label">Photography</p>
-			<p class="label">Nikon D3300 &middot; 18–55mm</p>
+			<p class="label">Nikon D3300</p>
 			<p class="label">Queens, New York</p>
 			<p class="label num">
 				{#if status === 'ready'}
@@ -143,6 +146,7 @@
 		</div>
 	</section>
 
+	<!-- Error State -->
 	{#if status === 'error'}
 		<section class="state shell">
 			<p class="state__title">The index could not be loaded.</p>
@@ -151,9 +155,7 @@
 		</section>
 	{/if}
 
-	<!-- The wait, in the site's own register: a readout naming where the index comes from,
-	     an indeterminate hairline, and frames holding the grid's place. No invented
-	     metadata and no invented photograph — the frames are empty on purpose. -->
+	<!-- Loading State -->
 	{#if status === 'loading'}
 		<section class="loading" role="status" aria-live="polite">
 			<span class="loading__hairline" aria-hidden="true"></span>
@@ -171,38 +173,41 @@
 		</section>
 	{/if}
 
-	{#if status === 'ready' && sets.length > 0}
-		<section class="marquee" aria-hidden="true">
-			<div class="marquee__track">
-				{#each [0, 1] as run (run)}
-					<div class="marquee__run">
-						<span class="marquee__word">Fahad Faruqi</span>
-						<span class="marquee__dot"></span>
-						<span class="marquee__word">Photographs</span>
-						<span class="marquee__dot"></span>
-						<span class="marquee__word">Queens, New York</span>
-						<span class="marquee__dot"></span>
-						<span class="marquee__word">{photos.length} Photographs</span>
-						<span class="marquee__dot"></span>
-					</div>
-				{/each}
-			</div>
-		</section>
-	{/if}
-
+	<!-- Images -->
 	{#if status === 'ready' && visibleSets.length > 0}
 		<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
 	{/if}
 </main>
 
+<!-- Footer -->
 <footer class="footer shell" use:reveal>
 	<div class="footer__row">
-		<span class="label">&copy; {new Date().getFullYear()} Fahad Faruqi</span>
-		<span class="label">All photographs by Fahad Faruqi</span>
-		<span class="label num">art.fahadfaruqi.com</span>
+		<div class="footer__span">
+			<span class="label">All photographs by Fahad Faruqi.</span>
+		</div>
+		<div class="footer__span">
+			<span class="label">Human Made.</span>
+		</div>
+		<div class="footer__span">
+			<button
+				class="label"
+				type="button"
+				aria-pressed={copied}
+				onclick={async () => {
+					await navigator.clipboard.writeText('fahadfaruqi1@gmail.com');
+					copied = true;
+					setTimeout(() => {
+						copied = false;
+					}, 1000);
+				}}
+			>
+				{!copied ? 'fahadfaruqi1@gmail.com' : 'Copied.'}
+			</button>
+		</div>
 	</div>
 </footer>
 
+<!-- To Top Button -->
 <button
 	class="to-top label"
 	class:to-top--visible={progress > 0.08}
@@ -213,6 +218,7 @@
 	Top <span class="to-top__arrow" aria-hidden="true">↑</span>
 </button>
 
+<!-- Individual Photo Lightbox -->
 <Lightbox
 	photos={visiblePhotos}
 	index={viewerIndex}
@@ -570,7 +576,18 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 2rem;
-		justify-content: space-between;
+		justify-content: space-evenly;
+	}
+
+	.footer__span {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		justify-content: center;
+	}
+
+	.footer__span .label {
+		min-width: 12ch;
 	}
 
 	/* Off the top of the document, and only then. Hidden it is not focusable, so it
