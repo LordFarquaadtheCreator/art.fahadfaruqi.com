@@ -42,6 +42,10 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`), date formatting |
 | `src/lib/utils/group-images.ts` | grouping into sets, slugify, ordering |
 | `src/lib/utils/variants.ts` | derivative URL convention |
+| `src/lib/utils/parallax.ts` | one shared loop for the plates' scroll drift |
+| `src/lib/utils/cursor.svelte.ts` | the number the pointer carries over the grid |
+| `src/lib/actions/count.ts` | animates a number to its new value; writes it outright when hidden |
+| `src/lib/actions/reveal.ts` | entrance for what is below the fold; never claims what is on screen |
 | `src/lib/webgl/layer.ts` | module-level singleton + the Svelte action that registers a plate |
 | `src/lib/webgl/PlateLayer.ts` | the canvas: one quad per visible plate, rect-driven, texture budget |
 | `src/lib/webgl/shaders.ts` | GLSL for the plate quads |
@@ -238,6 +242,53 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   allowed this origin holds a copy that can never satisfy a CORS request, and
   `cache: 'default'` will keep failing on it. That is why `fetchBitmap` retries
   once with `cache: 'reload'` — only a network refetch clears it.
+- **State that JavaScript sets belongs in a bound class, not a `data-` attribute.**
+  Svelte's compiler matches attribute selectors against the markup literally, so
+  `.masthead[data-scrolled='true']` is reported as an unused selector (and stripped)
+  when the markup says `data-scrolled="false"`. Declaring the attribute does not help
+  — only an *equal* literal counts. A `class:` binding is compiler-visible and scoped,
+  so the rule survives and still wins on specificity. An action-set attribute needs
+  `:global()`, declared *after* the scoped base rule, because the two tie and source
+  order decides.
+- **A computed style read straight after a class or attribute change lies in this
+  automation tab.** Transitions only advance when frames are produced, and a hidden tab
+  produces none, so `getComputedStyle` reports the *starting* value of a rule that is
+  in fact winning. This has now cost time twice (the light-theme probe, the masthead's
+  scrolled state). Inject `*{transition:none!important}` first, then read.
+- **The hidden automation tab delivers neither clicks nor scroll events.** CDP
+  `Input.dispatchMouseEvent` moves the pointer (the cursor-index label updates, so
+  pointer handlers are verifiable) but produces no `click` event at all — a listener
+  added by hand counts 0. Drive interactions with DOM events instead:
+  `el.dispatchEvent(new MouseEvent('click', {bubbles: true, composed: true}))` reaches
+  Svelte's delegated handler, and `window.dispatchEvent(new Event('scroll'))` exercises
+  a scroll handler (the masthead's `--progress` then reads 0.0857 at 1500px of 17501px,
+  which is the arithmetic checked end to end). Anything genuinely routed through
+  `requestAnimationFrame` — the parallax loop, a count-up — cannot be verified here.
+- **`scroll-behavior: smooth` on `html` means `window.scrollTo` animates.** With no
+  frames it never arrives, so probe scrolling with `{behavior: 'instant'}`.
+- **Release virtual time when you are done with it.** `Emulation.setVirtualTimePolicy`
+  with a `budget` leaves the clock paused; the next navigation then never completes and
+  `document.documentElement` is `null`. Release with `{policy: 'advance'}` and no budget.
+
+### Motion
+
+Every animation on the site follows the same four rules.
+
+- **An entrance never decides whether something is visible.** The hidden state exists
+  only behind an attribute the script sets, or inside a `@keyframes` `from` frame. If
+  the script dies, the page is unanimated, not empty.
+- **Restarting a CSS animation needs a new name.** An animation does not re-run when
+  its element is re-rendered; `GalleryGrid` toggles between `set-in-a` and `set-in-b`
+  as `pass` alternates, which is how filtering re-plays the wipe without re-mounting a
+  plate (and without throwing away decoded pixels or uploaded textures).
+- **Transforms live on their own layer.** The scroll drift sits on `.cell__slide`, a
+  wrapper inside `.cell`, so it never fights the cell's entrance transition over the
+  same property.
+- **Reduced motion is one global rule** (`src/app.css`): durations collapse to
+  0.001ms, so anything CSS-driven is already covered. JS-driven motion — the count-up,
+  the parallax loop, the viewer's open/close — checks
+  `prefers-reduced-motion` itself, and the count-up writes its final value outright
+  when `document.hidden`, because a hidden document produces no frames to count with.
 
 ## Design system
 
