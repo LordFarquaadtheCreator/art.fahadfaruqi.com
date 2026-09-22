@@ -295,6 +295,11 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   `::after` transform with only that rule in place reports the untouched start value in a
   hidden tab, which looks exactly like a broken selector. Kill `*::before` and `*::after`
   too before believing a pseudo-element's computed value.
+- **Script execution can be switched off to see the pre-hydration page.**
+  `Emulation.setScriptExecutionDisabled(true)` then a reload renders the prerendered markup
+  with the stylesheets applied and no hydration at all — the only way to inspect the states
+  that exist before the app boots, which is where the loading band lives and where the
+  canvas colour is decided. Re-enable it and reload when done.
 - **`scroll-behavior: smooth` on `html` means `window.scrollTo` animates.** With no
   frames it never arrives, so probe scrolling with `{behavior: 'instant'}`.
 - **Release virtual time when you are done with it.** `Emulation.setVirtualTimePolicy`
@@ -362,6 +367,14 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   strength are tokens in `src/app.css`. The two vignettes are the exception: a
   gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
   layers that cross-fade by opacity when the theme changes.
+- **The canvas is painted before the stylesheets are.** `<html>` carries an inline
+  `background` and `color-scheme: dark`, `app.html`'s script repaints both for a
+  light-theme visitor, and `theme-color` covers the browser chrome. Without that the
+  document has no background at all until the CSS lands, and the browser fills the gap
+  with its own canvas — which follows the *used* color-scheme, so it is white on a machine
+  set to light mode. That was the flash. The literals duplicate `--bg`, as in
+  `404.html`: nothing can read a custom property that early. `ThemeToggle` repaints the
+  same surfaces on toggle, the meta included.
 
 ### The instrument pass
 
@@ -426,6 +439,21 @@ itself after a dwell — `DWELL_MS` in `PhotoPlate.svelte`, two seconds.
 - **Nothing is behind the note.** The caption still carries the title and the viewer
   carries the description too, so a plate whose note never arrives is still fully
   readable — this is an addition, never the only path to the text.
+
+### The wait
+
+The index arrives over the wire, so the page opens with a state rather than with
+photographs. It is a band in the site's own register: a readout naming where the index
+comes from, an indeterminate amber hairline, and four `--bg-elev` frames holding the
+grid's place.
+
+- **Nothing is invented.** The frames are empty on purpose — no placeholder metadata, no
+  photograph — and the hairline travels instead of filling, because the API reports no
+  progress to fill with.
+- **It swaps instantly, with no transition.** An outro would hold the band in flow while
+  the grid mounted beneath it, so the page would jump when it collapsed. The grid's own
+  staggered reveals carry the arrival instead.
+- **It is announced, not just drawn:** `role="status"` and `aria-live="polite"`.
 
 ## Deployment
 
