@@ -254,7 +254,7 @@
 		right: 0;
 		bottom: 0;
 		height: 1px;
-		background: var(--line-2);
+		background: var(--accent);
 		transform: scaleX(var(--progress, 0));
 		transform-origin: left center;
 	}
@@ -409,7 +409,7 @@
 
 	.state__retry:hover {
 		color: var(--fg);
-		border-bottom-color: var(--fg);
+		border-bottom-color: var(--accent);
 		transform: translate3d(0, -1px, 0);
 	}
 
@@ -471,7 +471,7 @@
 
 	.to-top:hover {
 		color: var(--fg);
-		border-color: var(--line-2);
+		border-color: var(--accent);
 	}
 
 	.to-top__arrow {

@@ -146,7 +146,8 @@
 	}
 
 	/* The caption's rule draws itself from the left as the pointer arrives, so the
-	   hover state has a direction instead of just a colour change. */
+	   hover state has a direction instead of just a colour change. It draws in amber:
+	   this is the active plate. */
 	.plate__caption::after {
 		content: '';
 		position: absolute;
@@ -154,7 +155,7 @@
 		left: 0;
 		right: 0;
 		height: 1px;
-		background: var(--line-2);
+		background: var(--accent);
 		transform: scaleX(0);
 		transform-origin: left center;
 		transition: transform 0.5s cubic-bezier(0.16, 0.84, 0.28, 1);
@@ -168,6 +169,14 @@
 	.plate__number {
 		font-size: 0.6875rem;
 		color: var(--faint);
+		transition: color 0.3s ease;
+	}
+
+	/* The plate's number under the pointer is a live readout, so it is one of the few
+	   pieces of text that goes amber. */
+	.plate:hover .plate__number,
+	.plate__frame:focus-visible + .plate__caption .plate__number {
+		color: var(--accent);
 	}
 
 	.plate__title {

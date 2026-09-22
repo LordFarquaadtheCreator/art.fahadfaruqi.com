@@ -75,12 +75,14 @@
 		gap: 0.25rem 1.25rem;
 	}
 
+	/* The active set's marker: amber, because amber is for what is live. The label
+	   itself stays --fg so the amber never has to carry text. */
 	.index__mark {
 		position: absolute;
 		bottom: 0;
 		height: 1px;
 		width: var(--width, 0);
-		background: var(--line-2);
+		background: var(--accent);
 		transform: translate3d(var(--left, 0), 0, 0);
 		transition:
 			transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1),
@@ -111,6 +113,6 @@
 	}
 
 	.index__item--active .index__count {
-		color: var(--muted);
+		color: var(--accent);
 	}
 </style>

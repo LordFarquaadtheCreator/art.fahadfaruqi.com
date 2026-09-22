@@ -22,6 +22,12 @@
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
+
+	/* The instrument accent. Dark keeps the amber sampled from the reference
+	   (#dc8d18, hue 35.8) at 7.42:1 on --bg, so it may carry 11px labels. */
+	--accent: #dc8d18;
+	--accent-line: rgba(220, 141, 24, 0.35);
+	--accent-on-fill: #0a0a0a;
 }
 
 [data-theme='light'] {
@@ -37,6 +43,13 @@
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
+
+	/* The same amber measures 2.36:1 on the light ground and fails even the 3.0 bar for
+	   UI components, so light gets its own darker amber (6.06:1) — same hue, different
+	   lightness. */
+	--accent: #8a4a0a;
+	--accent-line: rgba(138, 74, 10, 0.35);
+	--accent-on-fill: #f2f1ed;
 }
 
 /* ---------------------------------------------------------------- base */
@@ -71,7 +84,7 @@ body {
 }
 
 :focus-visible {
-	outline: 1px solid var(--line-2);
+	outline: 1px solid var(--accent);
 	outline-offset: 3px;
 	/* The ring settles onto the element instead of blinking on. An animation rather
 	   than a transition, because the property only exists while focus is visible. */

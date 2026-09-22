@@ -138,10 +138,11 @@
 		will-change: transform;
 	}
 
+	/* The number the pointer is carrying is the one live readout on the grid. */
 	.carrier__label {
 		display: block;
 		margin: -1.6rem 0 0 1rem;
-		color: var(--fg);
+		color: var(--accent);
 		opacity: 0;
 		transform: scale(0.86);
 		transition:
@@ -163,6 +164,9 @@
 
 	/* ------------------------------------------------------------ light leak */
 
+	/* Hue 36 and 31, against the accent's 35.8: the light and the signal are one warm
+	   family. The stops used to sit at 22 and 13 — a redder orange that read as a second
+	   colour the moment the accent existed. */
 	.glow {
 		position: absolute;
 		top: 0;
@@ -172,8 +176,8 @@
 		margin: -39vmax 0 0 -39vmax;
 		background: radial-gradient(
 			closest-side,
-			rgba(255, 118, 38, 0.3),
-			rgba(255, 72, 22, 0.12) 42%,
+			rgba(255, 168, 38, 0.3),
+			rgba(255, 144, 25, 0.12) 42%,
 			transparent 70%
 		);
 		filter: blur(60px);

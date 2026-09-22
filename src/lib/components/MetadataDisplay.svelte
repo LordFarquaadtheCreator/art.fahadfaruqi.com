@@ -21,7 +21,9 @@
 		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0.4rem 1.25rem;
 		margin: 0;
-		border-top: 1px solid var(--line);
+		/* The rule above the panel is where the amber goes: the panel is a record, not a
+		   live readout, so its text stays monochrome. */
+		border-top: 1px solid var(--accent-line);
 		padding-top: 0.75rem;
 	}
 
