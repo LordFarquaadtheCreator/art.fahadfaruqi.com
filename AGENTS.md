@@ -287,6 +287,10 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   a scroll handler (the masthead's `--progress` then reads 0.0857 at 1500px of 17501px,
   which is the arithmetic checked end to end). Anything genuinely routed through
   `requestAnimationFrame` — the parallax loop, a count-up — cannot be verified here.
+- **A DOM click before hydration does nothing.** The plates are in the prerendered HTML
+  before Svelte attaches its handlers, so a probe that clicks the moment `.plate` appears
+  can test nothing at all and report a false negative. Wait for a signal only script can
+  produce — a class it sets, a count-up's final value — not for the element.
 - **`scroll-behavior: smooth` on `html` means `window.scrollTo` animates.** With no
   frames it never arrives, so probe scrolling with `{behavior: 'instant'}`.
 - **Release virtual time when you are done with it.** `Emulation.setVirtualTimePolicy`
@@ -354,6 +358,39 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   strength are tokens in `src/app.css`. The two vignettes are the exception: a
   gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
   layers that cross-fade by opacity when the theme changes.
+
+### The instrument pass
+
+A second register, drawn from the Death Stranding interface: amber, and the readouts that
+give the amber something to report.
+
+- **Amber is for what is live.** `--accent` marks the active set's marker, the masthead's
+  progress hairline, the pointer's index readout, the plate caption's hover rule, the
+  focused element, the chapter card's rule, and the viewer's status and position. Body
+  text, captions, set names, the EXIF keys and the footer stay monochrome. That restraint
+  is what keeps this compatible with the editorial layout, and it is the reference's own
+  rule: cold amber, for active and *projected* state, never for warmth.
+- **One amber cannot serve both themes.** `#dc8d18` is 7.42:1 on the dark ground and
+  2.36:1 on the light one — failing even the 3.0 bar for UI components. Light therefore
+  uses `#8a4a0a` (6.06:1): same hue, different lightness. Measure before changing either.
+- **Two warm colours are one too many.** The glow's stops sat at hue 22 and 13 while the
+  accent is 35.8 — which read as two colours the moment the accent existed. They are now
+  36 and 31, so the light and the signal belong to one family.
+- **The readout face ships.** `--font-mono` is IBM Plex Mono (latin subset, 400 only,
+  14.7 KB of woff2) rather than a system stack, so a readout looks the same on every
+  machine instead of rendering as whatever the visitor's OS calls monospace. Captions are
+  capitalised with their units attached.
+- **Every number is real.** The viewer's `PLATE 07 / 27` is the position in the current
+  list; the panel's File row comes from the listing's own `size`; a chapter card's date is
+  the set's most recent upload. An `<img>` reports no byte progress, so the viewer says
+  `DECODING` and shows no percentage — there is nothing honest to build one from.
+- **Framing stays in the margin.** The viewer's brackets are inset by the layout's own
+  padding and verified not to overlap the photograph. That is the line between an
+  instrument and a drawing over somebody's work.
+- **The chapter card is additive.** Each set opens with a band carrying its number, name,
+  count and date, replaying on every entry by toggling a class — an animation only
+  restarts when it is re-applied. The sticky header still carries the same facts, so
+  nothing depends on the card rendering.
 - **Sticky set headers.** Each `.set__head` is sticky below the masthead and carries a
   pinned state, reported by a one-pixel `.set__sentinel` above it: the browser has no
   such state, so the sentinel's position carries it. Pinned, the header tightens and
