@@ -316,8 +316,18 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   pass was explicitly out of scope for this build.
 - **Theme.** Dark by default, light available through the toggle, stored in
   `localStorage.theme`. `src/app.html` resolves it before first paint, so the toggle
-  and that inline script must agree on the stored values. Palette, grain, glow and
-  vignette strength are tokens in `src/app.css`; nothing hard-codes a colour.
+  and that inline script must agree on the stored values. Palette, grain and glow
+  strength are tokens in `src/app.css`. The two vignettes are the exception: a
+  gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
+  layers that cross-fade by opacity when the theme changes.
+- **Sticky set headers.** Each `.set__head` is sticky below the masthead and carries a
+  pinned state, reported by a one-pixel `.set__sentinel` above it: the browser has no
+  such state, so the sentinel's position carries it. Pinned, the header tightens and
+  firms up, the way the masthead does once you leave the top.
+- **Placeholders.** The grid blurs up from the 24px LQIP. The viewer does **not**: at
+  full size a 24px source is an unrecognisable wash, so it stands the grid's own 800px
+  derivative in behind the photograph — already fetched by the grid, so usually decoded
+  — and fades it out when the 2200px file arrives.
 - **Caption metadata.** The EXIF line under each plate is always visible at `--faint`
   and lifts to `--muted` on hover/focus. The lightbox shows the full panel.
 
