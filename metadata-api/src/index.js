@@ -9,7 +9,10 @@ const PAGE_SIZE = 1000; // R2 list page size
 const MAX_OBJECTS = 10000; // refuse to build a partial listing past this
 const ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 const CDN_BASE = "https://assets.fahadfaruqi.com";
-const DERIVATIVE_PREFIX = "d/";
+// Keys under these prefixes are not gallery items: d/ holds this site's generated
+// derivatives, www/ belongs to the other site sharing the bucket (fahadfaruqi.com).
+// Anything else in the bucket is treated as an original.
+const IGNORED_PREFIXES = ["d/", "www/"];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -117,9 +120,9 @@ async function listAllObjects(env) {
       include: ["customMetadata", "httpMetadata"],
     });
     for (const obj of listing.objects) {
-      // d/<variant>/<name>.webp objects are generated derivatives of the originals,
-      // not gallery items, and must not appear in the listing.
-      if (obj.key.startsWith(DERIVATIVE_PREFIX)) continue;
+      // Derivative and other-site objects are not gallery items and must not
+      // appear in the listing.
+      if (IGNORED_PREFIXES.some((prefix) => obj.key.startsWith(prefix))) continue;
       if (objects.length >= MAX_OBJECTS) {
         // Fail loudly rather than serve a silently incomplete gallery.
         throw new Error(
