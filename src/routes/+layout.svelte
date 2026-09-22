@@ -1,5 +1,8 @@
 <script lang="ts">
 	import '@fontsource-variable/inter';
+	// The readout face. Two weights only: the readouts are set in 400, and italic is
+	// never used, so nothing else ships.
+	import '@fontsource/ibm-plex-mono/400.css';
 	import '../app.css';
 
 	let { children } = $props();

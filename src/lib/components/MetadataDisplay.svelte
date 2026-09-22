@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { exifRows, type Exif } from '$lib/utils/exif';
+	import { formatBytes } from '$lib/utils/bytes';
 
-	let { exif }: { exif: Exif } = $props();
+	let { exif, size }: { exif: Exif; size?: number } = $props();
 
-	const rows = $derived(exifRows(exif));
+	// The file's own weight is the one piece of telemetry the readouts were missing, and
+	// it comes from the listing, not from a guess.
+	const bytes = $derived(size ? formatBytes(size) : null);
+	const rows = $derived([
+		...exifRows(exif),
+		...(bytes ? [{ label: 'File', value: bytes }] : [])
+	]);
 </script>
 
 {#if rows.length > 0}

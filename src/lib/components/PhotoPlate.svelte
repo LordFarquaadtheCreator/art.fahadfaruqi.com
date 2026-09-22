@@ -185,9 +185,13 @@
 		letter-spacing: -0.01em;
 	}
 
+	/* The caption's readout is set as a field instrument reports it: capitalised, with
+	   the units attached and the figures tabular so the columns line up between plates. */
 	.plate__exif {
 		grid-column: 2;
 		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
 		color: var(--faint);
 		transition: color 0.3s ease;
 	}

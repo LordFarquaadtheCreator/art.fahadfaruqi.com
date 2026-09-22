@@ -167,7 +167,7 @@
 					{/if}
 
 					<div class="viewer__exif" style="--i: 3">
-						<MetadataDisplay exif={photo.exif} />
+						<MetadataDisplay exif={photo.exif} size={photo.size} />
 					</div>
 				</div>
 			{/key}
