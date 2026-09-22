@@ -32,9 +32,22 @@ function register(frame: HTMLElement): () => void {
 	};
 }
 
-/** A dead-end feature should be silent, not a per-plate error loop. */
+let probeResult: boolean | null = null;
+
+/**
+ * Whether this browser can give us a context — asked once per document.
+ *
+ * Asking per plate costs a context per plate: a detached canvas holds onto its context
+ * until the browser gets round to collecting it, so 27 plates meant 27 contexts, well
+ * over the page's cap, and the browser began killing the oldest contexts — including the
+ * one the layer actually draws into. A lost context composites as an opaque white
+ * rectangle over the viewport, which is what the white flash was.
+ */
 function supported(): boolean {
+	if (probeResult !== null) return probeResult;
+
 	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		probeResult = false;
 		unavailable = true;
 		return false;
 	}
@@ -42,9 +55,17 @@ function supported(): boolean {
 	try {
 		const probe = document.createElement('canvas');
 		const context = probe.getContext('webgl2') ?? probe.getContext('webgl');
-		if (!context) unavailable = true;
-		return Boolean(context);
+		if (!context) {
+			probeResult = false;
+			unavailable = true;
+			return false;
+		}
+		// Hand the probe's context straight back: it existed only to answer this question.
+		context.getExtension('WEBGL_lose_context')?.loseContext();
+		probeResult = true;
+		return true;
 	} catch {
+		probeResult = false;
 		unavailable = true;
 		return false;
 	}
@@ -62,4 +83,18 @@ function create(): PlateLayer | null {
 		console.warn('[plate-layer] could not start; photographs stay as plain images', error);
 		return null;
 	}
+}
+
+/**
+ * Vite replaces this module on every edit up its graph, which resets `layer` to null while
+ * the previous instance still holds a canvas and a GL context. Hand the old one back rather
+ * than leaking a context per edit.
+ */
+if (import.meta.hot) {
+	import.meta.hot.dispose(() => {
+		layer?.dispose();
+		layer = null;
+		registrations = 0;
+		probeResult = null;
+	});
 }

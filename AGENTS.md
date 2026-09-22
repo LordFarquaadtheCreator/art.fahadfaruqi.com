@@ -300,6 +300,13 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   with the stylesheets applied and no hydration at all — the only way to inspect the states
   that exist before the app boots, which is where the loading band lives and where the
   canvas colour is decided. Re-enable it and reload when done.
+- **To count WebGL contexts, instrument `getContext` before the app boots.** Surplus
+  contexts usually come from detached probe canvases, which no DOM query can see —
+  `document.querySelectorAll('canvas')` shows the one canvas the app draws into while the
+  browser is holding dozens. Install `Page.addScriptToEvaluateOnNewDocument` with a wrapper
+  around `HTMLCanvasElement.prototype.getContext` that records the type and whether the
+  canvas is attached, reload, then read the array back. That is what turned "one canvas, so
+  one context" into the measured "27 plates, 30 contexts, 27 of them probes".
 - **`scroll-behavior: smooth` on `html` means `window.scrollTo` animates.** With no
   frames it never arrives, so probe scrolling with `{behavior: 'instant'}`.
 - **Release virtual time when you are done with it.** `Emulation.setVirtualTimePolicy`
@@ -367,12 +374,50 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   strength are tokens in `src/app.css`. The two vignettes are the exception: a
   gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
   layers that cross-fade by opacity when the theme changes.
-- **The canvas is painted before the stylesheets are.** `<html>` carries an inline
+
+### One context, not one per plate
+
+The layer is built on a single canvas, and for a long time the page was quietly creating
+more than twenty. `supported()` — the "can this browser give us a WebGL context at all"
+check — ran on **every** plate registration, and each run left a detached probe canvas
+holding a context the browser would not collect for a while. Measured on a loaded page:
+**27 plates, 30 contexts, 27 of them probes.**
+
+Chrome caps live contexts per page and kills the oldest once you pass the cap — the
+console warning `Too many active WebGL contexts. Oldest context will be lost.`, followed by
+`THREE.WebGLRenderer: Context Lost.` A canvas whose context has been taken from it
+composites as an **opaque white rectangle**. This one is `position: fixed; inset: 0` at
+`z-index: 4` — above every photograph, below the masthead — so what a visitor saw was a
+white page with the nav bar intact. That is the white flash. Nothing about it is
+dev-specific: it happened in production too.
+
+Three changes, each sufficient to stop it alone:
+
+- **Ask once per document.** `probeResult` memoises the answer, and the probe's context is
+  handed straight back through `WEBGL_lose_context`. Measured after: **27 plates, 2
+  contexts** — one probe, one layer.
+- **Release the context on teardown.** `WebGLRenderer.dispose()` frees three's own
+  resources but leaves the context to the collector, so `dispose()` also calls
+  `forceContextLoss()`.
+- **Take the canvas out of the page when a context goes.** `handleContextLost` deletes
+  `data-ready`, which is what `.plate-canvas` is shown by, so a lost context can never
+  paint over the page. The plates are plain `<img>` elements; losing the layer costs the
+  effect and nothing else.
+
+Verified by forcing the loss with `WEBGL_lose_context.loseContext()`: with `data-ready`
+set, the canvas reports `visibility: visible` at z-index 4; after the loss `data-ready` is
+gone and the computed visibility is `hidden`.
+
+### The inline canvas
+
+The canvas is painted before the stylesheets are. `<html>` carries an inline
   `background` and `color-scheme: dark`, `app.html`'s script repaints both for a
   light-theme visitor, and `theme-color` covers the browser chrome. Without that the
   document has no background at all until the CSS lands, and the browser fills the gap
   with its own canvas — which follows the *used* color-scheme, so it is white on a machine
-  set to light mode. That was the flash. The literals duplicate `--bg`, as in
+  set to light mode. Note this is a real gap but it is **not** the flash that gets
+  reported: what people actually saw was the WebGL layer losing its context, above. The
+  literals duplicate `--bg`, as in
   `404.html`: nothing can read a custom property that early. `ThemeToggle` repaints the
   same surfaces on toggle, the meta included.
 

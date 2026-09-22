@@ -128,6 +128,10 @@ export class PlateLayer {
 		this.canvas.removeEventListener('webglcontextlost', this.handleContextLost);
 		window.removeEventListener('resize', this.resize);
 		this.renderer.dispose();
+		// dispose() frees three's own resources but leaves the context to the garbage
+		// collector; the browser counts contexts until then, so hand it back now. The
+		// lost-context listener is already off, so this cannot be mistaken for a real loss.
+		this.renderer.forceContextLoss();
 		this.canvas.remove();
 	}
 
@@ -156,6 +160,11 @@ export class PlateLayer {
 	private handleContextLost = (event: Event) => {
 		event.preventDefault();
 		this.contextLost = true;
+		// The canvas spans the viewport, and a canvas whose context is gone composites as an
+		// opaque white rectangle — so take it out of the page instead of painting over the
+		// photographs. `data-ready` is what the stylesheet shows it by; the plates are plain
+		// <img> elements, so losing the layer costs the effect and nothing else.
+		delete this.canvas.dataset.ready;
 		delete document.documentElement.dataset.webgl;
 		for (const quad of this.quads.values()) this.dropTexture(quad);
 	};
