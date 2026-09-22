@@ -445,6 +445,15 @@ git push origin main
 gh run list --limit 1 --json databaseId --jq '.[0].databaseId' | xargs -I{} gh run watch {} --exit-status
 ```
 
+**Poll for the run that matches the commit you pushed.** A poll issued the instant after the
+push can still see the *previous* commit's run and report *its* green — which is a
+confirmation of the wrong thing. Match the `headSha` before believing it:
+
+```sh
+gh run list --limit 40 --json headSha,conclusion \
+  --jq '.[] | select(.headSha|startswith("<short-sha>"))'
+```
+
 **The Worker** — separate, manual, and only needed when `metadata-api/` changes:
 
 ```sh
