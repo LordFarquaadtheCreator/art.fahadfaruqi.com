@@ -78,7 +78,7 @@ its `title`, `altText`, `description`, `set` and `number` metadata intact.
 ## Deploy
 
 ```sh
-npm install -g wrangler
+bun install -g wrangler
 wrangler login
 wrangler deploy
 ```

@@ -25,7 +25,7 @@ Cloudflare R2 bucket "assets"
         this app (client-side fetch on load) → group by `set` → order by `number`
               │
               ▼
-        npm run build → build/ → GitHub Pages (art.fahadfaruqi.com)
+        bun run build → build/ → GitHub Pages (art.fahadfaruqi.com)
 ```
 
 There is no server-side component in this repo's own build: the page is static
@@ -66,11 +66,11 @@ markup, and the gallery appears once the browser fetches the metadata API.
 ## Local development
 
 ```sh
-npm install
-npm run dev        # vite dev server
-npm run check      # svelte-check: keep this at 0 errors / 0 warnings
-npm run build      # static build into build/
-npm run preview    # serve build/
+bun install
+bun run dev        # vite dev server
+bun run check      # svelte-check: keep this at 0 errors / 0 warnings
+bun run build      # static build into build/
+bun run preview    # serve build/
 ```
 
 `.env` (gitignored, so absent in CI) may set `VITE_METADATA_API` and
@@ -159,7 +159,7 @@ done
 kept out of the repo (the user's rule: `scripts/` holds Go only). It lives at
 `~/.hermes/cache/scratch/derivatives.mjs` on the machine that ran it, uses `sharp`,
 reads the metadata API, skips derivatives that already return 200, and uploads through
-`node_modules/.bin/wrangler r2 object put --remote` with
+`bunx wrangler r2 object put --remote` with
 `cache-control: public, max-age=31536000, immutable`. If it is gone, rewriting it is
 a small job: read the listing, resize to the four widths above, upload to the four
 `d/` prefixes. It needs R2 credentials, which are in `scripts/config.yaml` (gitignored).
@@ -203,7 +203,7 @@ canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
 - The grade lives in the fragment shader for a reason: the CSS hover zoom it replaced
   could not be seen at all once the quad covered the image. Anything that changes how a
   photograph looks belongs here, not in a rule on `.plate__image`.
-- **A shader change cannot be verified by building.** `npm run build` never compiles
+- **A shader change cannot be verified by building.** `bun run build` never compiles
   GLSL, so a broken shader ships silently and only fails in a browser that draws a
   frame — which is exactly what the automation tab never does. Compile the source in a
   page yourself (`gl.compileShader` + `getProgramInfoLog`) before believing it works.
@@ -459,8 +459,8 @@ grid's place.
 
 Two independent targets.
 
-**The site** — `.github/workflows/deploy.yml` runs on push to `main`: `npm ci`,
-`npm run build`, `actions/upload-pages-artifact`, `actions/deploy-pages`. Pages is
+**The site** — `.github/workflows/deploy.yml` runs on push to `main`: `bun install`,
+`bun run build`, `actions/upload-pages-artifact`, `actions/deploy-pages`. Pages is
 configured with `build_type: workflow` and the custom domain
 `art.fahadfaruqi.com`, so the repository root is not what gets served: the artifact's
 own `build/index.html` is. Nothing outside `build/` reaches the live site — anything
@@ -468,7 +468,7 @@ placed at the repository root would be invisible on the web, `robots.txt` and
 `favicon.png` included (they come from `static/`). Steps:
 
 ```sh
-npm run check && npx vite build        # catch it locally first
+bun run check && bun run build        # catch it locally first
 git push origin main
 gh run list --limit 1 --json databaseId --jq '.[0].databaseId' | xargs -I{} gh run watch {} --exit-status
 ```
@@ -485,7 +485,7 @@ gh run list --limit 40 --json headSha,conclusion \
 **The Worker** — separate, manual, and only needed when `metadata-api/` changes:
 
 ```sh
-npm run worker:deploy        # cd metadata-api && wrangler deploy
+bun run worker:deploy        # cd metadata-api && wrangler deploy
 ```
 
 **The 404 page** — `static/404.html` is a standalone page, copied into the artifact,
@@ -564,7 +564,7 @@ OPTIONS, trailing slash, 404s, CORS on errors).
 3. **No silent fallbacks.** If a fetch fails or a field is missing, the failure should
    be visible rather than papered over. The two `??` defaults for the API and CDN URLs
    predate this build and exist so CI can build without a `.env`.
-4. **Keep `npm run check` clean.** It currently reports 0 errors and 0 warnings.
+4. **Keep `bun run check` clean.** It currently reports 0 errors and 0 warnings.
 5. **Curated metadata is the content.** `title`, `alttext`, `description`, `set` and
    `number` come from the bucket, not from this repo; do not invent placeholder
    content in components.

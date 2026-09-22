@@ -52,11 +52,11 @@ R2 bucket "assets"
 ## Running it locally
 
 ```sh
-npm install
-npm run dev        # dev server
-npm run check      # svelte-check
-npm run build      # static build into build/
-npm run preview    # serve the build
+bun install
+bun run dev        # dev server
+bun run check      # svelte-check
+bun run build      # static build into build/
+bun run preview    # serve the build
 ```
 
 `.env` (gitignored) may override `VITE_METADATA_API` and `VITE_CDN_BASE`; when unset,
@@ -108,7 +108,7 @@ The site builds and publishes itself on every push to `main`
 only when it changes:
 
 ```sh
-npm run worker:deploy
+bun run worker:deploy
 ```
 
 ## Design credit
