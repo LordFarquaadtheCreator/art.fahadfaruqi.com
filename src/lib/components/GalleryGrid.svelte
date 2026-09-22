@@ -4,6 +4,7 @@
 	import type { PhotoSet } from '$lib/utils/group-images';
 	import type { Photo } from '$lib/utils/metadata';
 	import PhotoPlate from './PhotoPlate.svelte';
+	import SetCard from './SetCard.svelte';
 
 	let {
 		sets,
@@ -48,6 +49,7 @@
 <div class="gallery" data-pass={wipe}>
 	{#each sets as set, setIndex (set.slug)}
 		<section class="set" id={set.slug} style="--set: {setIndex}">
+			<SetCard {set} index={setIndex} />
 			<span
 				class="set__sentinel"
 				aria-hidden="true"
