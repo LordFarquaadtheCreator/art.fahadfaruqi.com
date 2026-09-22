@@ -1,17 +1,26 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" style="background: #0a0a0a; color-scheme: dark">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="color-scheme" content="dark light" />
+		<!-- The site is graded dark and only opts out on request, so the UA's own surfaces —
+		     the canvas, the scrollbars, the browser chrome — default to dark too. -->
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0a0a0a" />
 		<meta name="text-scale" content="scale" />
 		<script>
-			// Resolve the theme before first paint so there is no flash of the wrong one.
-			// Dark is the default: the gallery is graded for it. Only an explicit choice
-			// of light (saved by the toggle) opts out.
+			// Resolve the theme before first paint so there is no flash of the wrong one —
+			// and paint the canvas in the same breath. Until the stylesheets arrive the
+			// document has no background of its own, and the browser fills that gap with
+			// its default canvas: white on a machine set to light mode, which is what the
+			// flash was. The colour literals duplicate --bg in app.css, as in 404.html;
+			// nothing can reference a custom property this early.
 			try {
-				const saved = localStorage.getItem('theme');
-				document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
+				const light = localStorage.getItem('theme') === 'light';
+				const root = document.documentElement;
+				root.dataset.theme = light ? 'light' : 'dark';
+				root.style.colorScheme = light ? 'light' : 'dark';
+				root.style.backgroundColor = light ? '#f2f1ed' : '#0a0a0a';
 			} catch {}
 		</script>
 		%sveltekit.head%

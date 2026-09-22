@@ -5,18 +5,34 @@
 
 	let theme = $state<Theme>('dark');
 
+	// The canvas colour, duplicated from --bg: it has to exist before the stylesheets do.
+	const CANVAS: Record<Theme, string> = { dark: '#0a0a0a', light: '#f2f1ed' };
+
+	/** Everything the palette does not reach: the properties the user agent paints itself —
+	 *  the canvas behind the document, the scrollbars, and the browser chrome on mobile. */
+	function paintAgentSurfaces(next: Theme) {
+		const root = document.documentElement;
+		root.dataset.theme = next;
+		root.style.colorScheme = next;
+		root.style.backgroundColor = CANVAS[next];
+		document
+			.querySelector('meta[name="theme-color"]')
+			?.setAttribute('content', CANVAS[next]);
+	}
+
 	// The theme is applied by the inline script in app.html before first paint;
-	// this only reads it back and persists changes.
+	// this reads it back, and reconciles the surfaces that script could not know about.
 	$effect(() => {
 		if (browser) {
 			theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+			paintAgentSurfaces(theme);
 		}
 	});
 
 	function toggle() {
 		theme = theme === 'dark' ? 'light' : 'dark';
-		document.documentElement.dataset.theme = theme;
 		localStorage.setItem('theme', theme);
+		paintAgentSurfaces(theme);
 	}
 </script>
 

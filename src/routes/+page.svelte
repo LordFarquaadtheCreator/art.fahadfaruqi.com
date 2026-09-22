@@ -151,6 +151,26 @@
 		</section>
 	{/if}
 
+	<!-- The wait, in the site's own register: a readout naming where the index comes from,
+	     an indeterminate hairline, and frames holding the grid's place. No invented
+	     metadata and no invented photograph — the frames are empty on purpose. -->
+	{#if status === 'loading'}
+		<section class="loading" role="status" aria-live="polite">
+			<span class="loading__hairline" aria-hidden="true"></span>
+			<div class="loading__inner shell">
+				<p class="label num loading__readout">
+					Receiving index<span class="loading__dot" aria-hidden="true"></span>
+				</p>
+				<p class="label num loading__source">assets.fahadfaruqi.com</p>
+			</div>
+			<div class="loading__frames shell" aria-hidden="true">
+				{#each [0, 1, 2, 3] as frame (frame)}
+					<span class="loading__frame" style="--i: {frame}"></span>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	{#if status === 'ready' && sets.length > 0}
 		<section class="marquee" aria-hidden="true">
 			<div class="marquee__track">
@@ -411,6 +431,121 @@
 		color: var(--fg);
 		border-bottom-color: var(--accent);
 		transform: translate3d(0, -1px, 0);
+	}
+
+	/* ---------------------------------------------------------------- the wait */
+
+	.loading {
+		position: relative;
+		padding-block: 0 var(--block);
+	}
+
+	/* Indeterminate on purpose: the API reports no progress, so the line travels rather
+	   than filling. With reduced motion it stops travelling and simply sits there. */
+	.loading__hairline {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: var(--line);
+		overflow: hidden;
+	}
+
+	.loading__hairline::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		width: 28%;
+		background: var(--accent);
+		animation: loading-run 1.7s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+	}
+
+	@keyframes loading-run {
+		from {
+			transform: translate3d(-100%, 0, 0);
+		}
+		to {
+			transform: translate3d(460%, 0, 0);
+		}
+	}
+
+	.loading__inner {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		padding-block: 1.4rem;
+	}
+
+	.loading__readout {
+		color: var(--accent);
+	}
+
+	.loading__dot {
+		display: inline-block;
+		vertical-align: middle;
+		width: 0.3rem;
+		height: 0.3rem;
+		margin-left: 0.5rem;
+		border-radius: 50%;
+		background: currentColor;
+		animation: loading-pulse 1.4s ease-in-out infinite;
+	}
+
+	@keyframes loading-pulse {
+		0%,
+		100% {
+			opacity: 0.2;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
+	.loading__frames {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: clamp(0.75rem, 2vw, 2rem);
+	}
+
+	@media (min-width: 700px) {
+		.loading__frames {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+
+	.loading__frame {
+		position: relative;
+		aspect-ratio: 3 / 2;
+		overflow: hidden;
+		background: var(--bg-elev);
+		animation: meta-in 0.7s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		animation-delay: calc(var(--i) * 80ms);
+	}
+
+	.loading__frame::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			100deg,
+			transparent 25%,
+			color-mix(in srgb, var(--fg) 7%, transparent) 50%,
+			transparent 75%
+		);
+		animation: loading-sheen 1.9s ease-in-out infinite;
+		animation-delay: calc(var(--i) * 130ms);
+	}
+
+	@keyframes loading-sheen {
+		from {
+			transform: translate3d(-100%, 0, 0);
+		}
+		to {
+			transform: translate3d(100%, 0, 0);
+		}
 	}
 
 	.state__retry:active {
