@@ -6,8 +6,6 @@
 	--font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* ---------------------------------------------------------------- palette */
-
 :root,
 [data-theme='dark'] {
 	--bg: #0a0a0a;
@@ -22,9 +20,6 @@
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
-
-	/* The instrument accent. Dark keeps the amber sampled from the reference
-	   (#dc8d18, hue 35.8) at 7.42:1 on --bg, so it may carry 11px labels. */
 	--accent: #dc8d18;
 	--accent-line: rgba(220, 141, 24, 0.35);
 	--accent-on-fill: #0a0a0a;
@@ -43,16 +38,10 @@
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
-
-	/* The same amber measures 2.36:1 on the light ground and fails even the 3.0 bar for
-	   UI components, so light gets its own darker amber (6.06:1) — same hue, different
-	   lightness. */
 	--accent: #8a4a0a;
 	--accent-line: rgba(138, 74, 10, 0.35);
 	--accent-on-fill: #f2f1ed;
 }
-
-/* ---------------------------------------------------------------- base */
 
 * {
 	box-sizing: border-box;
@@ -86,8 +75,6 @@ body {
 :focus-visible {
 	outline: 1px solid var(--accent);
 	outline-offset: 3px;
-	/* The ring settles onto the element instead of blinking on. An animation rather
-	   than a transition, because the property only exists while focus is visible. */
 	animation: ring-in 0.32s cubic-bezier(0.16, 0.84, 0.28, 1);
 }
 
@@ -119,14 +106,11 @@ img {
 	max-width: 100%;
 }
 
-/* ---------------------------------------------------------------- tokens */
-
 :root {
 	--gutter: clamp(1rem, 3.2vw, 3rem);
 	--block: clamp(4rem, 12vh, 11rem);
 	--display: clamp(3.25rem, 13.5vw, 12rem);
 	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
-	/* The sticky masthead's height: scroll offsets and sticky set headers clear it. */
 	--masthead-h: 3rem;
 }
 
@@ -191,9 +175,6 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	html {
 		scroll-behavior: auto;
 	}
-
-	/* iteration-count is not optional: the grain and any marquee run `infinite`, and
-	   collapsing only the duration would spin them thousands of times a second. */
 	*,
 	*::before,
 	*::after {
