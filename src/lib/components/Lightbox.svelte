@@ -116,6 +116,17 @@
 	>
 		<button class="viewer__scrim" type="button" onclick={onClose} aria-label="Close viewer"></button>
 
+		<!-- Field framing: brackets in the viewer's own margin, never over the photograph,
+		     and the load status. An <img> reports no byte progress, so the status is the
+		     word alone — there is no percentage to show and none is invented. -->
+		<div class="viewer__hud" aria-hidden="true">
+			<span class="viewer__bracket viewer__bracket--tl"></span>
+			<span class="viewer__bracket viewer__bracket--tr"></span>
+			<span class="viewer__bracket viewer__bracket--bl"></span>
+			<span class="viewer__bracket viewer__bracket--br"></span>
+			<span class="viewer__decode label" class:viewer__decode--done={imageReady}>Decoding</span>
+		</div>
+
 		<div
 			class="viewer__surface"
 			class:viewer__surface--dragging={dragging}
@@ -154,8 +165,8 @@
 			{#key photo.key}
 				<div class="viewer__panel">
 					<div class="viewer__row" style="--i: 0">
-						<span class="label num"
-							>{String(photo.number).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span
+						<span class="label num viewer__count"
+							>Plate {String(index + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span
 						>
 						<span class="label">{photo.set}</span>
 					</div>
@@ -218,6 +229,68 @@
 		inset: 0;
 		background: var(--scrim);
 		backdrop-filter: blur(22px);
+	}
+
+	/* The HUD lives in the viewer's own margin — the same inset as the layout padding —
+	   so the framing never draws over the photograph itself. */
+	.viewer__hud {
+		position: absolute;
+		inset: clamp(0.75rem, 3vw, 2.5rem);
+		pointer-events: none;
+	}
+
+	.viewer__bracket {
+		position: absolute;
+		width: clamp(0.75rem, 2vw, 1.5rem);
+		height: clamp(0.75rem, 2vw, 1.5rem);
+		border: 0 solid var(--accent-line);
+	}
+
+	.viewer__bracket--tl {
+		top: 0;
+		left: 0;
+		border-top-width: 1px;
+		border-left-width: 1px;
+	}
+
+	.viewer__bracket--tr {
+		top: 0;
+		right: 0;
+		border-top-width: 1px;
+		border-right-width: 1px;
+	}
+
+	.viewer__bracket--bl {
+		bottom: 0;
+		left: 0;
+		border-bottom-width: 1px;
+		border-left-width: 1px;
+	}
+
+	.viewer__bracket--br {
+		bottom: 0;
+		right: 0;
+		border-bottom-width: 1px;
+		border-right-width: 1px;
+	}
+
+	/* Status, not decoration: it says what is happening and nothing more. */
+	.viewer__decode {
+		position: absolute;
+		left: calc(clamp(0.75rem, 2vw, 1.5rem) + 0.4rem);
+		bottom: 0.15rem;
+		color: var(--accent);
+		opacity: 1;
+		transition: opacity 0.35s ease;
+	}
+
+	.viewer__decode--done {
+		opacity: 0;
+	}
+
+	/* Where you are in the run: live, so it is amber, like every other readout. */
+	.viewer__count {
+		color: var(--accent);
 	}
 
 	.viewer__surface {
