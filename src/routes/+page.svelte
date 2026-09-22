@@ -185,6 +185,25 @@
 		</section>
 	{/if}
 
+	{#if status === 'ready' && sets.length > 0}
+		<section class="marquee" aria-hidden="true">
+			<div class="marquee__track">
+				{#each [0, 1] as run (run)}
+					<div class="marquee__run">
+						<span class="marquee__word">Fahad Faruqi</span>
+						<span class="marquee__dot"></span>
+						<span class="marquee__word">Photographs</span>
+						<span class="marquee__dot"></span>
+						<span class="marquee__word">Queens, New York</span>
+						<span class="marquee__dot"></span>
+						<span class="marquee__word">{photos.length} Photographs</span>
+						<span class="marquee__dot"></span>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	{#if status === 'ready' && visibleSets.length > 0}
 		<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
 	{/if}
@@ -630,6 +649,68 @@
 
 	.to-top:hover .to-top__arrow {
 		transform: translate3d(0, -0.2rem, 0);
+	}
+
+	/* A band of type running under the index, so the page announces itself once between
+	   the list of sets and the photographs. Two identical runs translated by exactly half
+	   the track make the loop seamless; hover holds it still. */
+	.marquee {
+		position: relative;
+		overflow: hidden;
+		margin-top: clamp(2rem, 8vh, 6rem);
+		padding-block: clamp(0.75rem, 2vh, 1.5rem);
+		border-block: 1px solid var(--line);
+		-webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+		mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+	}
+
+	.marquee__track {
+		display: flex;
+		width: max-content;
+		animation: marquee-run 44s linear infinite;
+	}
+
+	.marquee:hover .marquee__track {
+		animation-play-state: paused;
+	}
+
+	.marquee__run {
+		display: flex;
+		align-items: center;
+		gap: clamp(1.5rem, 4vw, 3.5rem);
+		padding-right: clamp(1.5rem, 4vw, 3.5rem);
+	}
+
+	.marquee__word {
+		font-size: clamp(1.75rem, 5.5vw, 4.5rem);
+		font-weight: 600;
+		letter-spacing: -0.03em;
+		line-height: 1;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--muted);
+		transition: color 0.45s ease;
+	}
+
+	.marquee:hover .marquee__word {
+		color: var(--fg);
+	}
+
+	.marquee__dot {
+		flex: none;
+		width: 0.4rem;
+		height: 0.4rem;
+		border-radius: 50%;
+		background: var(--line-2);
+	}
+
+	@keyframes marquee-run {
+		from {
+			transform: translate3d(0, 0, 0);
+		}
+		to {
+			transform: translate3d(-50%, 0, 0);
+		}
 	}
 
 	@media (max-width: 700px) {

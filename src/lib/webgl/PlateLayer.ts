@@ -32,6 +32,12 @@ type Quad = {
 // mis-registered quad shows up as a seam while the layer is still a pass-through.
 const EFFECTS = true;
 
+// The print: grade and halation, then grain over the top. Separate switches because
+// they fail differently — a grade that is too strong flattens the photographs, grain
+// that is too strong makes them look dirty, and anyone can turn either off here.
+const GRADE = true;
+const GRAIN = 0.05;
+
 /** How far outside the viewport a plate keeps its texture resident, in CSS px. */
 const MARGIN = 400;
 /** Cap on resident textures: beyond this the furthest plates are released. */
@@ -217,6 +223,10 @@ export class PlateLayer {
 			quad.material.uniforms.uTime.value = time;
 			quad.material.uniforms.uProgress.value = EFFECTS ? distance * distance : 0;
 			quad.material.uniforms.uHover.value = EFFECTS ? quad.hover : 0;
+			// Grade is a mix factor in the shader, so switching it off leaves the
+			// photograph untouched rather than half-graded.
+			quad.material.uniforms.uGrade.value = GRADE ? 1 : 0;
+			quad.material.uniforms.uGrain.value = GRAIN;
 
 			// The DOM image stays visible until its quad is actually drawing pixels.
 			quad.frame.dataset.gl = 'live';
@@ -312,7 +322,9 @@ function makeMaterial(noise: Texture): ShaderMaterial {
 			uNoise: { value: noise },
 			uTime: { value: 0 },
 			uProgress: { value: 0 },
-			uHover: { value: 0 }
+			uHover: { value: 0 },
+			uGrade: { value: 0 },
+			uGrain: { value: 0 }
 		},
 		depthTest: false,
 		depthWrite: false

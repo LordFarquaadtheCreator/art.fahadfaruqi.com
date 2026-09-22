@@ -83,7 +83,9 @@ deployed site.
 ### Pitfall: `vite preview` caches its file index
 
 `vite preview` indexes `build/` when it starts. Rebuilding while it runs leaves it
-serving the previous HTML and, for hashed filenames, 404s or stale bytes. Symptom:
+serving the previous HTML and, for hashed filenames, 404s or stale bytes. A file
+copied into `build/` after startup 404s for the same reason — no restart, no index
+entry. Symptom:
 a module you just built is served with a different hash or a 9-byte body. Fix:
 restart the preview process after every rebuild. Restart it with a pattern that
 cannot match the shell you are restarting from — `pkill -f '[v]ite preview'`, not
@@ -187,6 +189,27 @@ canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
 - `const EFFECTS` in `PlateLayer.ts` is the master switch for displacement and
   the RGB split. Turning it off leaves a pure pass-through, which is the state
   to debug a mis-registered quad in — a seam shows up immediately.
+- `const GRADE` and `const GRAIN` are separate switches for the print: a lifted-black
+  S-curve and warm halation around the highlights, then two octaves of animated grain
+  weighted towards the midtones. They are separate because they fail differently — too
+  much grade flattens a photograph, too much grain makes it look dirty. `GRAIN` is an
+  amplitude, so `0` is off.
+- Both arrive through `uGrade`/`uGrain` as *uniforms*, so the shader has one code path:
+  switching either off mixes to the untouched photograph rather than compiling a
+  different program.
+- The page-wide grain plates stay, but their opacity dropped (`--grain-opacity: 0.16`
+  dark, `0.055` light) — the photographs now carry real grain, and at the old strength
+  the two multiplied into mud.
+- The grade lives in the fragment shader for a reason: the CSS hover zoom it replaced
+  could not be seen at all once the quad covered the image. Anything that changes how a
+  photograph looks belongs here, not in a rule on `.plate__image`.
+- **A shader change cannot be verified by building.** `npm run build` never compiles
+  GLSL, so a broken shader ships silently and only fails in a browser that draws a
+  frame — which is exactly what the automation tab never does. Compile the source in a
+  page yourself (`gl.compileShader` + `getProgramInfoLog`) before believing it works.
+  The vertex shader only compiles with three's injected declarations
+  (`attribute vec3 position; attribute vec2 uv; uniform mat4 projectionMatrix; uniform
+  mat4 modelViewMatrix;`) — without them the errors are about three, not about you.
 - `data-webgl="off"` on `<html>` stops the loop and hands every photograph back
   to its own `<img>`. The CSS half of that lives in `src/app.css` and needs
   `!important` because the rule it overrides is scoped (`.plate__image.svelte-hash`).
@@ -285,10 +308,16 @@ Every animation on the site follows the same four rules.
   wrapper inside `.cell`, so it never fights the cell's entrance transition over the
   same property.
 - **Reduced motion is one global rule** (`src/app.css`): durations collapse to
-  0.001ms, so anything CSS-driven is already covered. JS-driven motion — the count-up,
-  the parallax loop, the viewer's open/close — checks
+  0.001ms **and `animation-iteration-count` is reset to 1**. The second half is not
+  optional — the grain plates and the marquee run `infinite`, and collapsing only the
+  duration turns them into thousands of cycles a second. JS-driven motion — the
+  count-up, the parallax loop, the viewer's open/close — checks
   `prefers-reduced-motion` itself, and the count-up writes its final value outright
   when `document.hidden`, because a hidden document produces no frames to count with.
+- **A marquee is two identical runs translated by half the track.** `.marquee__track`
+  holds two `.marquee__run` elements and animates to `translate3d(-50%, 0, 0)`, so the
+  loop is seamless because the second run lands exactly where the first began; hover
+  holds it still. Anything less than half the track jumps at the seam.
 
 ## Design system
 
@@ -305,15 +334,14 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   In the single-column layout, `max-width: calc(var(--ratio) * 74vh)` stops a portrait
   from being several screens tall.
 - **Layers.** `Atmosphere.svelte` renders two fixed layers: `.backdrop` (z-index 0)
-  holding the pointer-tracked glow and the vignette, and `.overlay` (z-index 6)
+  holding the pointer-tracked glow and the two vignettes, and `.overlay` (z-index 6)
   holding the two grain plates. The glow is a light source **behind** the page, so
   `main` and `.footer` are lifted with `position: relative; z-index: 1` — remove that
-  and the page content drops behind the light. Grain is the only thing drawn over the
-  photographs.
+  and the page content drops behind the light. Over the photographs there are exactly
+  two things: the plate canvas (z-index 4) and the grain plates (6).
 - **Glow motion.** The pointer target is lerped at a very low follow factor (~0.022
-  per frame) so the light trails and wobbles rather than tracking the cursor. It is
-  an approximation of the reference's WebGL layer, not a port of it; a real WebGL
-  pass was explicitly out of scope for this build.
+  per frame) so the light trails and wobbles rather than tracking the cursor. It stays
+  CSS: the WebGL pass this build does have draws the photographs, not the light.
 - **Theme.** Dark by default, light available through the toggle, stored in
   `localStorage.theme`. `src/app.html` resolves it before first paint, so the toggle
   and that inline script must agree on the stored values. Palette, grain and glow

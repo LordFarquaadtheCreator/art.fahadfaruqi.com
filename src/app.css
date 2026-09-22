@@ -18,7 +18,7 @@
 	--line: rgba(242, 241, 238, 0.13);
 	--line-2: rgba(242, 241, 238, 0.34);
 	--scrim: rgba(8, 8, 8, 0.97);
-	--grain-opacity: 0.23;
+	--grain-opacity: 0.16;
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
@@ -33,7 +33,7 @@
 	--line: rgba(16, 16, 16, 0.14);
 	--line-2: rgba(16, 16, 16, 0.38);
 	--scrim: rgba(242, 241, 237, 0.94);
-	--grain-opacity: 0.08;
+	--grain-opacity: 0.055;
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
@@ -179,11 +179,14 @@ html[data-webgl='off'] .plate__frame .plate__image {
 		scroll-behavior: auto;
 	}
 
+	/* iteration-count is not optional: the grain and any marquee run `infinite`, and
+	   collapsing only the duration would spin them thousands of times a second. */
 	*,
 	*::before,
 	*::after {
 		animation-duration: 0.001ms !important;
 		animation-delay: 0ms !important;
+		animation-iteration-count: 1 !important;
 		transition-duration: 0.001ms !important;
 	}
 }
