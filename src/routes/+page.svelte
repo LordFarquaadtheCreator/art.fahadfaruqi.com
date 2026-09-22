@@ -198,6 +198,16 @@
 	</div>
 </footer>
 
+<button
+	class="to-top label"
+	class:to-top--visible={progress > 0.08}
+	type="button"
+	tabindex={progress > 0.08 ? 0 : -1}
+	onclick={() => window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' })}
+>
+	Top <span class="to-top__arrow" aria-hidden="true">↑</span>
+</button>
+
 <Lightbox
 	photos={visiblePhotos}
 	index={viewerIndex}
@@ -491,6 +501,19 @@
 		padding-block: var(--block);
 	}
 
+	/* The error block arrives the same way everything else does. */
+	.state > * {
+		animation: meta-in 0.7s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
+	.state > :nth-child(2) {
+		animation-delay: 0.08s;
+	}
+
+	.state > :nth-child(3) {
+		animation-delay: 0.16s;
+	}
+
 	.state__title {
 		margin: 0 0 0.5rem;
 	}
@@ -562,6 +585,51 @@
 		flex-wrap: wrap;
 		gap: 0.5rem 2rem;
 		justify-content: space-between;
+	}
+
+	/* Off the top of the document, and only then. Hidden it is not focusable, so it
+	   never appears in the tab order as an invisible stop. */
+	.to-top {
+		position: fixed;
+		right: var(--gutter);
+		bottom: clamp(1rem, 3vh, 2rem);
+		z-index: 15;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.35rem;
+		padding: 0.4rem 0.7rem;
+		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--bg) 80%, transparent);
+		backdrop-filter: blur(10px);
+		color: var(--muted);
+		opacity: 0;
+		transform: translate3d(0, 0.75rem, 0);
+		pointer-events: none;
+		transition:
+			opacity 0.4s ease,
+			transform 0.5s cubic-bezier(0.16, 0.84, 0.28, 1),
+			color 0.25s ease,
+			border-color 0.25s ease;
+	}
+
+	.to-top--visible {
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+	}
+
+	.to-top:hover {
+		color: var(--fg);
+		border-color: var(--line-2);
+	}
+
+	.to-top__arrow {
+		display: inline-block;
+		transition: transform 0.35s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.to-top:hover .to-top__arrow {
+		transform: translate3d(0, -0.2rem, 0);
 	}
 
 	@media (max-width: 700px) {

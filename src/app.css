@@ -22,7 +22,6 @@
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
-	--vignette: rgba(0, 0, 0, 0.55);
 }
 
 [data-theme='light'] {
@@ -38,7 +37,6 @@
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
-	--vignette: rgba(60, 52, 44, 0.18);
 }
 
 /* ---------------------------------------------------------------- base */

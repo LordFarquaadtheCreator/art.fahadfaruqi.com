@@ -20,7 +20,9 @@ export const plateFragment = /* glsl */ `
 	varying vec2 vUv;
 
 	void main() {
-		vec2 uv = vUv;
+		// The hover zoom is done here, in UV space, rather than by scaling the quad: a
+		// scaled quad would spill a few pixels over the caption and its neighbours.
+		vec2 uv = (vUv - 0.5) * (1.0 - 0.025 * uHover) + 0.5;
 
 		float warp_amount = 0.026 * uProgress + 0.05 * uHover;
 		float split = 0.0035 * uProgress + 0.004 * uHover;

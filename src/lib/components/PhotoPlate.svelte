@@ -124,7 +124,11 @@
 
 	/* The quad draws over this image rather than replacing it. The image stays the
 	   photograph: if the layer cannot start, cannot fetch a plate's bytes, or loses its
-	   context, there is simply no effect — never a missing picture. */
+	   context, there is simply no effect — never a missing picture.
+
+	   This scale is the hover affordance only while the layer is off (see the escape
+	   hatch in app.css); with the layer running, the quad covers it and the zoom is
+	   done in the shader's UV space instead. */
 	.plate__frame:hover .plate__image,
 	.plate__frame:focus-visible .plate__image {
 		transform: scale(1.025);

@@ -94,7 +94,8 @@
 
 <div class="backdrop" aria-hidden="true">
 	<div class="glow" bind:this={glow}></div>
-	<div class="vignette"></div>
+	<div class="vignette vignette--dark"></div>
+	<div class="vignette vignette--light"></div>
 </div>
 
 <div class="overlay" aria-hidden="true">
@@ -212,15 +213,31 @@
 
 	/* ------------------------------------------------------------ vignette */
 
+	/* Two vignettes, one per theme, cross-faded by opacity: a gradient's colours cannot
+	   interpolate, so the only way to ease this on a theme switch is to swap layers. */
 	.vignette {
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(
-			125% 95% at 50% 42%,
-			transparent 42%,
-			var(--vignette) 100%
-		);
 		mix-blend-mode: multiply;
+		transition: opacity 0.7s ease;
+	}
+
+	.vignette--dark {
+		background: radial-gradient(125% 95% at 50% 42%, transparent 42%, rgba(0, 0, 0, 0.55) 100%);
+		opacity: 1;
+	}
+
+	.vignette--light {
+		background: radial-gradient(125% 95% at 50% 42%, transparent 42%, rgba(60, 52, 44, 0.18) 100%);
+		opacity: 0;
+	}
+
+	:global(html[data-theme='light']) .vignette--dark {
+		opacity: 0;
+	}
+
+	:global(html[data-theme='light']) .vignette--light {
+		opacity: 1;
 	}
 
 	@keyframes grain-crawl {

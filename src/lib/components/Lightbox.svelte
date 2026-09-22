@@ -123,13 +123,21 @@
 			tabindex="-1"
 			role="group"
 			aria-label="Photograph"
-			style="--drag: {drag}px"
+			style="--drag: {drag}px; --lean: {drag / 60}"
 			ontouchstart={handleTouchStart}
 			ontouchmove={handleTouchMove}
 			ontouchend={handleTouchEnd}
 		>
 			<figure class="viewer__figure">
 				{#key photo.key}
+					<img
+						class="viewer__lqip"
+						class:viewer__lqip--faded={imageReady}
+						src={photo.grid}
+						alt=""
+						aria-hidden="true"
+						decoding="async"
+					/>
 					<img
 						class="viewer__image"
 						class:viewer__image--ready={imageReady}
@@ -224,17 +232,39 @@
 		transition: transform 0.34s cubic-bezier(0.16, 0.84, 0.28, 1);
 	}
 
-	/* While the finger is down the surface tracks it exactly; the release animates. */
+	/* While the finger is down the surface tracks it exactly, tips with the gesture and
+	   pulls in slightly, so the release reads as travel. */
 	.viewer__surface--dragging {
 		transition: none;
+		transform: translate3d(var(--drag, 0), 0, 0) rotate(calc(var(--lean, 0) * 0.5deg))
+			scale(0.985);
 	}
 
 	.viewer__figure {
+		position: relative;
 		margin: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		min-height: 0;
+	}
+
+	/* Stands in while the 2200px file decodes. This is the grid's own derivative, not the
+	   24px LQIP: the grid already fetched it, so it is usually decoded and waiting, and
+	   at this size a 24px source would be an unrecognisable wash. */
+	.viewer__lqip {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		filter: blur(5px);
+		transform: scale(1.01);
+		transition: opacity 0.45s ease;
+	}
+
+	.viewer__lqip--faded {
+		opacity: 0;
 	}
 
 	.viewer__image {
