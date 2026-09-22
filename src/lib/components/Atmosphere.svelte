@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { cursor } from '$lib/utils/cursor.svelte';
 
 	// Two noise plates at different scales, plus a vignette. The plates are step-animated
 	// on a transform and an opacity so the grain crawls and flickers like film rather than
@@ -10,6 +11,23 @@
 		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E";
 
 	let glow = $state<HTMLElement | null>(null);
+	let carrier = $state<HTMLElement | null>(null);
+
+	// The number the pointer is carrying over the grid. No easing here: a cursor label
+	// that trails reads as lag, and the show/hide motion is CSS.
+	$effect(() => {
+		if (!browser || !carrier) return;
+		if (window.matchMedia('(hover: none)').matches) return;
+
+		const node = carrier;
+
+		function onMove(event: PointerEvent) {
+			node.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
+		}
+
+		window.addEventListener('pointermove', onMove, { passive: true });
+		return () => window.removeEventListener('pointermove', onMove);
+	});
 
 	// The light leak follows the pointer, but only slowly: the rendered position eases
 	// toward the cursor at a low factor, wobbles on two slow sine terms, and stretches
@@ -82,6 +100,12 @@
 <div class="overlay" aria-hidden="true">
 	<div class="grain grain--coarse" style="background-image: url('{coarseNoise}')"></div>
 	<div class="grain grain--fine" style="background-image: url('{fineNoise}')"></div>
+
+	<div class="carrier" bind:this={carrier}>
+		<span class="carrier__label label num" class:carrier__label--active={cursor.active}
+			>{cursor.label}</span
+		>
+	</div>
 </div>
 
 <style>
@@ -103,6 +127,39 @@
 		overflow: hidden;
 	}
 
+	/* ------------------------------------------------------------ cursor index */
+
+	/* Sits above the photographs, carrying the plate's number with the pointer. */
+	.carrier {
+		position: absolute;
+		top: 0;
+		left: 0;
+		will-change: transform;
+	}
+
+	.carrier__label {
+		display: block;
+		margin: -1.6rem 0 0 1rem;
+		color: var(--fg);
+		opacity: 0;
+		transform: scale(0.86);
+		transition:
+			opacity 0.3s ease,
+			transform 0.4s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.carrier__label--active {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	/* A finger has no hover, and a label pinned under the finger is just in the way. */
+	@media (hover: none) {
+		.carrier {
+			display: none;
+		}
+	}
+
 	/* ------------------------------------------------------------ light leak */
 
 	.glow {
@@ -120,6 +177,8 @@
 		);
 		filter: blur(60px);
 		opacity: var(--glow-opacity);
+		/* So the light eases when the theme changes instead of snapping. */
+		transition: opacity 0.6s ease;
 		mix-blend-mode: var(--glow-blend);
 		will-change: transform;
 	}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { exifLine } from '$lib/utils/exif';
+	import { cursor } from '$lib/utils/cursor.svelte';
 	import { registerPlate } from '$lib/webgl/layer';
 	import type { Photo } from '$lib/utils/metadata';
 
@@ -7,6 +8,17 @@
 
 	let loaded = $state(false);
 	let ratio = $state<number | null>(null);
+
+	// The pointer carries the plate's number while it is over the grid, so you always
+	// know where in the set you are without reading the caption.
+	function carryIndex() {
+		cursor.label = String(photo.number).padStart(2, '0');
+		cursor.active = true;
+	}
+
+	function dropIndex() {
+		cursor.active = false;
+	}
 
 	// The placeholder carries the photo's aspect ratio, so space is reserved before
 	// the full image arrives and nothing shifts.
@@ -31,6 +43,10 @@
 			? `aspect-ratio: ${ratio}; --ratio: ${ratio}`
 			: `--ratio: ${3 / 2}`}
 		onclick={() => onOpen(photo)}
+		onpointerenter={carryIndex}
+		onpointerleave={dropIndex}
+		onfocus={carryIndex}
+		onblur={dropIndex}
 	>
 		<img
 			class="plate__lqip"
@@ -115,6 +131,7 @@
 	}
 
 	.plate__caption {
+		position: relative;
 		display: grid;
 		grid-template-columns: auto 1fr;
 		column-gap: 0.75rem;
@@ -122,6 +139,26 @@
 		margin-top: 0.625rem;
 		padding-top: 0.5rem;
 		border-top: 1px solid var(--line);
+	}
+
+	/* The caption's rule draws itself from the left as the pointer arrives, so the
+	   hover state has a direction instead of just a colour change. */
+	.plate__caption::after {
+		content: '';
+		position: absolute;
+		top: -1px;
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: var(--line-2);
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform 0.5s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.plate:hover .plate__caption::after,
+	.plate__frame:focus-visible + .plate__caption::after {
+		transform: scaleX(1);
 	}
 
 	.plate__number {

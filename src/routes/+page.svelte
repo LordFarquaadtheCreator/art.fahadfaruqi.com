@@ -7,6 +7,7 @@
 	import SplitText from '$lib/components/SplitText.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { count } from '$lib/actions/count';
+	import { reveal } from '$lib/actions/reveal';
 	import { groupBySet } from '$lib/utils/group-images';
 	import { fetchPhotos, type Photo } from '$lib/utils/metadata';
 
@@ -50,6 +51,30 @@
 	}
 
 	let pass = $state(0);
+	let scrolled = $state(false);
+	let progress = $state(0);
+
+	// The masthead's scroll state, as component state rather than an attribute an action
+	// sets: Svelte can see a bound class, so it keeps the rules and scopes them. The read
+	// is a plain pair of numbers (neither forces layout while scrolling), and Svelte
+	// batches the updates, so this stays cheaper than deferring to a frame.
+	$effect(() => {
+		const read = () => {
+			const y = window.scrollY;
+			const span = document.documentElement.scrollHeight - window.innerHeight;
+			scrolled = y > 24;
+			progress = span > 0 ? Math.min(1, y / span) : 0;
+		};
+
+		read();
+		window.addEventListener('scroll', read, { passive: true });
+		window.addEventListener('resize', read, { passive: true });
+
+		return () => {
+			window.removeEventListener('scroll', read);
+			window.removeEventListener('resize', read);
+		};
+	});
 
 	const reducedMotion = () =>
 		typeof window !== 'undefined' &&
@@ -89,12 +114,13 @@
 	/>
 </svelte:head>
 
-<header class="masthead">
+<header class="masthead" class:masthead--scrolled={scrolled}>
 	<div class="masthead__inner shell">
 		<a class="masthead__mark" href="#top">Fahad Faruqi</a>
 		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
 		<ThemeToggle />
 	</div>
+	<span class="masthead__progress" aria-hidden="true" style="--progress: {progress}"></span>
 </header>
 
 <main id="top">
@@ -134,7 +160,7 @@
 			</div>
 		</section>
 	{:else}
-		<section class="sets shell" aria-label="Sets">
+		<section class="sets shell" aria-label="Sets" use:reveal>
 			<div class="sets__head">
 				<span class="label">Sets</span>
 				<span class="label">Photographs</span>
@@ -164,7 +190,7 @@
 	{/if}
 </main>
 
-<footer class="footer shell">
+<footer class="footer shell" use:reveal>
 	<div class="footer__row">
 		<span class="label">&copy; {new Date().getFullYear()} Fahad Faruqi</span>
 		<span class="label">All photographs by Fahad Faruqi</span>
@@ -190,6 +216,18 @@
 		background: color-mix(in srgb, var(--bg) 86%, transparent);
 		backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--line);
+		transition:
+			background-color 0.45s ease,
+			border-color 0.45s ease,
+			backdrop-filter 0.45s ease;
+	}
+
+	/* Scrolled, the bar sinks a little: tighter, dimmer, and with a firmer rule, so
+	   the page reads as having moved rather than the bar just sticking. */
+	.masthead--scrolled {
+		background: color-mix(in srgb, var(--bg) 72%, transparent);
+		backdrop-filter: blur(18px);
+		border-bottom-color: var(--line-2);
 	}
 
 	/* The glow lives in a fixed layer behind the page, so the page itself has to be
@@ -201,18 +239,83 @@
 	}
 
 	.masthead__inner {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1.5rem;
 		padding-block: 0.85rem;
+		transition: padding 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.masthead--scrolled .masthead__inner {
+		padding-block: 0.6rem;
+	}
+
+	/* One hairline of how far through the document you are. */
+	.masthead__progress {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 1px;
+		background: var(--line-2);
+		transform: scaleX(var(--progress, 0));
+		transform-origin: left center;
+	}
+
+	.masthead__inner > * {
+		animation: masthead-in 0.7s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
+	.masthead__inner > :nth-child(1) {
+		animation-delay: 0.04s;
+	}
+
+	.masthead__inner > :nth-child(2) {
+		animation-delay: 0.11s;
+	}
+
+	.masthead__inner > :nth-child(3) {
+		animation-delay: 0.18s;
+	}
+
+	@keyframes masthead-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, -0.5rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
 	}
 
 	.masthead__mark {
+		position: relative;
 		font-size: 0.8125rem;
 		font-weight: 600;
 		letter-spacing: 0.02em;
 		white-space: nowrap;
+	}
+
+	/* The only link in the masthead draws its own underline on approach. */
+	.masthead__mark::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -0.15rem;
+		height: 1px;
+		background: var(--line-2);
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.masthead__mark:hover::after,
+	.masthead__mark:focus-visible::after {
+		transform: scaleX(1);
 	}
 
 	.hero {
@@ -241,8 +344,73 @@
 		margin: 0;
 	}
 
+	/* The strip catches up with the headline rather than appearing with it. */
+	.hero__meta > * {
+		animation: meta-in 0.8s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
+	.hero__meta > :nth-child(1) {
+		animation-delay: 0.24s;
+	}
+
+	.hero__meta > :nth-child(2) {
+		animation-delay: 0.32s;
+	}
+
+	.hero__meta > :nth-child(3) {
+		animation-delay: 0.4s;
+	}
+
+	.hero__meta > :nth-child(4) {
+		animation-delay: 0.48s;
+	}
+
+	@keyframes meta-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 0.6rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+
 	.sets {
 		padding-bottom: clamp(2rem, 6vh, 4rem);
+	}
+
+	/* The table arrives row by row, whether it is the first paint or the skeleton
+	   being replaced. */
+	.sets__row {
+		animation: row-in 0.6s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
+	.sets__row:nth-child(2) {
+		animation-delay: 0.09s;
+	}
+
+	.sets__row:nth-child(3) {
+		animation-delay: 0.18s;
+	}
+
+	.sets__row:nth-child(4) {
+		animation-delay: 0.27s;
+	}
+
+	.sets__row:nth-child(n + 5) {
+		animation-delay: 0.36s;
+	}
+
+	@keyframes row-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 0.75rem, 0);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
 	}
 
 	.sets__head,
@@ -336,6 +504,20 @@
 	.state__retry {
 		border-bottom: 1px solid var(--line-2);
 		padding-bottom: 0.15rem;
+		transition:
+			color 0.25s ease,
+			border-color 0.25s ease,
+			transform 0.3s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	.state__retry:hover {
+		color: var(--fg);
+		border-bottom-color: var(--fg);
+		transform: translate3d(0, -1px, 0);
+	}
+
+	.state__retry:active {
+		transform: translate3d(0, 0, 0) scale(0.98);
 	}
 
 	.skeleton {
@@ -364,6 +546,15 @@
 	.footer {
 		padding-block: clamp(2rem, 6vh, 4rem);
 		border-top: 1px solid var(--line);
+		transition:
+			opacity 0.9s ease,
+			transform 0.9s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	/* Set by the reveal action; see the note on .cell in GalleryGrid. */
+	:global(.footer[data-revealed='false']) {
+		opacity: 0;
+		transform: translate3d(0, 1rem, 0);
 	}
 
 	.footer__row {

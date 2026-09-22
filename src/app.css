@@ -75,6 +75,18 @@ body {
 :focus-visible {
 	outline: 1px solid var(--line-2);
 	outline-offset: 3px;
+	/* The ring settles onto the element instead of blinking on. An animation rather
+	   than a transition, because the property only exists while focus is visible. */
+	animation: ring-in 0.32s cubic-bezier(0.16, 0.84, 0.28, 1);
+}
+
+@keyframes ring-in {
+	from {
+		outline-offset: 9px;
+	}
+	to {
+		outline-offset: 3px;
+	}
 }
 
 a {
@@ -103,6 +115,8 @@ img {
 	--block: clamp(4rem, 12vh, 11rem);
 	--display: clamp(3.25rem, 13.5vw, 12rem);
 	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
+	/* The sticky masthead's height: scroll offsets and sticky set headers clear it. */
+	--masthead-h: 3rem;
 }
 
 .shell {

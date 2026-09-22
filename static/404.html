@@ -170,6 +170,52 @@
 				color: var(--faint);
 			}
 
+			/* The page assembles itself, in the order you read it. No script involved:
+			   this is the whole motion budget of a page whose only job is to point back
+			   at the gallery, and it still works if the bundle never loads. */
+			header > *,
+			main > *,
+			footer > * {
+				animation: enter 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+			}
+
+			header > :nth-child(2) {
+				animation-delay: 0.08s;
+			}
+
+			main > :nth-child(1) {
+				animation-delay: 0.1s;
+			}
+
+			main > :nth-child(2) {
+				animation-delay: 0.2s;
+			}
+
+			main > :nth-child(3) {
+				animation-delay: 0.3s;
+			}
+
+			@keyframes enter {
+				from {
+					opacity: 0;
+					transform: translate3d(0, 0.75rem, 0);
+				}
+				to {
+					opacity: 1;
+					transform: none;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*,
+				*::before,
+				*::after {
+					animation-duration: 0.001ms !important;
+					animation-delay: 0ms !important;
+					transition-duration: 0.001ms !important;
+				}
+			}
+
 			a:focus-visible {
 				outline: 1px solid var(--line-2);
 				outline-offset: 3px;

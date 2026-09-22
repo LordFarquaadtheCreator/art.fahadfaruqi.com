@@ -22,6 +22,7 @@
 
 <button
 	class="toggle label"
+	class:toggle--light={theme === 'light'}
 	type="button"
 	onclick={toggle}
 	aria-label="Switch to {theme === 'dark' ? 'light' : 'dark'} theme"
@@ -49,5 +50,12 @@
 		border: 1px solid currentColor;
 		border-radius: 50%;
 		background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+		transition: transform 0.55s cubic-bezier(0.16, 0.84, 0.28, 1);
+	}
+
+	/* The half-filled disc turns over as the theme flips, so the switch reads as one
+	   movement rather than a label swap. */
+	.toggle--light .toggle__glyph {
+		transform: rotate(180deg);
 	}
 </style>

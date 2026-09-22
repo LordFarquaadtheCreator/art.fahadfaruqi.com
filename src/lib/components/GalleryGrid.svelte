@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { reveal } from '$lib/actions/reveal';
+	import { registerParallax } from '$lib/utils/parallax';
 	import type { PhotoSet } from '$lib/utils/group-images';
 	import type { Photo } from '$lib/utils/metadata';
 	import PhotoPlate from './PhotoPlate.svelte';
@@ -13,33 +15,6 @@
 	// when its name changes — this is what re-plays the wipe on every filter change
 	// without re-mounting a single plate.
 	const wipe = $derived(pass % 2 === 0 ? 'a' : 'b');
-
-	// Starts each cell's entrance only once it is actually on screen. A cell already in
-	// view is left alone, so the animation can never be the reason a photograph is
-	// missing — it is only ever an entrance for what has not been seen yet.
-	function reveal(node: HTMLElement) {
-		const box = node.getBoundingClientRect();
-		if (box.top < window.innerHeight && box.bottom > 0) {
-			return { destroy: () => {} };
-		}
-
-		node.dataset.revealed = 'false';
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						node.dataset.revealed = 'true';
-						observer.disconnect();
-					}
-				}
-			},
-			{ rootMargin: '0px 0px -8% 0px' }
-		);
-
-		observer.observe(node);
-		return { destroy: () => observer.disconnect() };
-	}
 
 	const pad = (value: number) => String(value).padStart(2, '0');
 </script>
@@ -60,7 +35,9 @@
 						style="--order: {Math.min(index, 8)}"
 						use:reveal
 					>
-						<PhotoPlate {photo} onOpen={(opened) => onOpen(opened, set)} />
+						<div class="cell__slide" use:registerParallax>
+							<PhotoPlate {photo} onOpen={(opened) => onOpen(opened, set)} />
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -72,7 +49,7 @@
 	.gallery {
 		padding-block: clamp(2rem, 6vh, 5rem) var(--block);
 		/* The masthead is sticky, so a scroll to the grid has to clear it. */
-		scroll-margin-top: 3.5rem;
+		scroll-margin-top: calc(var(--masthead-h) + 0.5rem);
 	}
 
 	/* Filtering re-plays the incoming sets, one after another. The two names are
@@ -114,12 +91,26 @@
 	}
 
 	.set__head {
+		position: sticky;
+		/* Above the WebGL canvas, so a sticky set label is never drawn over by a
+		   photograph passing underneath it. */
+		z-index: 5;
+		top: var(--masthead-h);
 		display: flex;
 		align-items: baseline;
 		gap: 1rem;
 		padding-block: 0.75rem;
 		border-bottom: 1px solid var(--line);
+		background: color-mix(in srgb, var(--bg) 82%, transparent);
+		backdrop-filter: blur(10px);
 		margin-bottom: clamp(1.5rem, 5vh, 4rem);
+		transition: background-color 0.4s ease;
+	}
+
+	/* The parallax carrier. Keeping the drift on a wrapper means the cell's own
+	   entrance transition and the scroll offset never fight over `transform`. */
+	.cell__slide {
+		transform: translate3d(0, var(--parallax, 0), 0);
 	}
 
 	.set__name {
