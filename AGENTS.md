@@ -291,6 +291,10 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   before Svelte attaches its handlers, so a probe that clicks the moment `.plate` appears
   can test nothing at all and report a false negative. Wait for a signal only script can
   produce — a class it sets, a count-up's final value — not for the element.
+- **`* { transition: none !important }` does not reach pseudo-elements.** Reading a
+  `::after` transform with only that rule in place reports the untouched start value in a
+  hidden tab, which looks exactly like a broken selector. Kill `*::before` and `*::after`
+  too before believing a pseudo-element's computed value.
 - **`scroll-behavior: smooth` on `html` means `window.scrollTo` animates.** With no
   frames it never arrives, so probe scrolling with `{behavior: 'instant'}`.
 - **Release virtual time when you are done with it.** `Emulation.setVirtualTimePolicy`
@@ -401,6 +405,27 @@ give the amber something to report.
   — and fades it out when the 2200px file arrives.
 - **Caption metadata.** The EXIF line under each plate is always visible at `--faint`
   and lifts to `--muted` on hover/focus. The lightbox shows the full panel.
+
+### The plate's note
+
+Every photograph carries a description from the listing, and it arrives on the plate
+itself after a dwell — `DWELL_MS` in `PhotoPlate.svelte`, two seconds.
+
+- **Two ways to dwell, decided by the device.** Hover for anything with a pointer, and an
+  `IntersectionObserver` at 0.65 visibility for anything without one; `(hover: hover) and
+  (pointer: fine)` picks the branch, and the observer is not even constructed on a desktop.
+  Verified on a touch-emulated load: one 0.65 observer per plate, 27 of them.
+- **Keyboard skips the wait.** A visitor who has tabbed to a plate has already chosen it,
+  so the note arrives at once. Its focus state is component state — `plate__media--focused`
+  — because `:focus-visible` cannot be verified while the page is not the focused window,
+  and a selector that cannot be tested is a selector that will break silently.
+- **The note lands on the photograph, not in the caption.** The caption is a grid item, so
+  growing it would push every row beneath it down and shift the page under somebody who is
+  reading. Measured: the figure's height and the next plate's `top` are identical before
+  and after the reveal.
+- **Nothing is behind the note.** The caption still carries the title and the viewer
+  carries the description too, so a plate whose note never arrives is still fully
+  readable — this is an addition, never the only path to the text.
 
 ## Deployment
 
