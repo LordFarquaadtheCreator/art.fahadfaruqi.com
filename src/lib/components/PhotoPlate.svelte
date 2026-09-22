@@ -13,7 +13,7 @@
 	// note arrives. Nothing about the photograph is behind it — the caption below still
 	// carries the title, and the viewer carries everything — so this is an addition to
 	// what is already readable, never the only way to read it.
-	const DWELL_MS = 2000;
+	const DWELL_MS = 500;
 
 	let revealed = $state(false);
 	// The keyboard's focus state is component state, not something a selector decides:
