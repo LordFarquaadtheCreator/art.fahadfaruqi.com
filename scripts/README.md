@@ -44,7 +44,7 @@ bucket keys as positional arguments.
 
 | Command | What it does |
 | --- | --- |
-| `create [file...]` | Extracts EXIF, prompts for the required metadata, uploads |
+| `create [file...]` | Extracts EXIF, prompts for the required metadata, uploads; `--inherit <ext>` takes both from the same-named object instead |
 | `read [key...]` | Prints the CDN URL of each matching object |
 | `update [key...]` | Edits metadata, and renames the object when `-name` is given |
 | `delete [key...]` | Deletes the matching objects, after a confirmation prompt |
@@ -59,6 +59,16 @@ bucket keys as positional arguments.
 Prompts for `title`, `altText`, `description`, `set`, and `number`, reusing the
 first image's set as the default for the rest of the batch. The object key is the
 local file name, so the upload lands at the bucket root.
+
+`--inherit <ext>` uploads a re-encoded file with the metadata of the bucket object it
+replaces — the same name carrying that extension, e.g. `--inherit .png` for a WebP made
+from a PNG — and skips the prompts entirely. It also carries the original's upload time
+into custom metadata, because R2's own timestamp resets on every upload and the gallery
+reads that value as the set's date.
+
+```sh
+./manage-images create -d ~/exports/webp -p '*.webp' --inherit .png
+```
 
 ### read
 
@@ -82,7 +92,8 @@ Only the flags you pass are changed; the rest of the object's metadata is
 preserved. `-name` takes a new file name, keeps the original extension when the
 new name has none, and stays inside the object's own prefix. Renaming copies the
 object and deletes the old key, which leaves the `d/<variant>/…` derivatives this
-name is derived from behind — re-run `node scripts/derivatives.mjs` afterwards.
+name is derived from behind — re-run the derivative generator afterwards (it is kept
+out of this repo; `AGENTS.md` says where it lives and what it does).
 
 ### delete
 

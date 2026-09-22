@@ -45,6 +45,48 @@ func (m *Metadata) Validate() error {
 	return nil
 }
 
+// FromMap rebuilds metadata from the custom metadata an object already carries,
+// so a re-encoded file can inherit the fields of the item it replaces instead of
+// being prompted for them again. The five named fields are lifted out; every
+// other key — the EXIF pairs, a preserved upload time — travels in Exif, which is
+// where Map writes them back from.
+func FromMap(custom map[string]string) (*Metadata, error) {
+	// R2 folds custom metadata keys to lowercase on the way in, so compare in the
+	// same case the bucket reports.
+	normalised := make(map[string]string, len(custom))
+	for k, v := range custom {
+		normalised[strings.ToLower(k)] = v
+	}
+
+	number, err := strconv.Atoi(normalised["number"])
+	if err != nil {
+		return nil, fmt.Errorf("number %q is not an integer: %w", normalised["number"], err)
+	}
+
+	metadata := &Metadata{
+		Title:       normalised["title"],
+		AltText:     normalised["alttext"],
+		Description: normalised["description"],
+		Set:         normalised["set"],
+		Number:      number,
+		Exif:        map[string]string{},
+	}
+
+	for k, v := range normalised {
+		switch k {
+		case "title", "alttext", "description", "set", "number":
+			continue
+		}
+		metadata.Exif[k] = v
+	}
+
+	if err := metadata.Validate(); err != nil {
+		return nil, err
+	}
+
+	return metadata, nil
+}
+
 // Map renders the metadata as the custom metadata R2 stores alongside the object.
 func (m *Metadata) Map() map[string]string {
 	metaMap := map[string]string{

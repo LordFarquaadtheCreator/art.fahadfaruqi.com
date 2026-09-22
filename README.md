@@ -10,16 +10,16 @@ metadata, and draws whatever the bucket contains.
 
 ## Why it is built this way
 
-The originals are 6016×4016 PNGs of 110–140 MB each, so they can never be what a
-browser loads. Each one has three pre-generated WebP derivatives, and the gallery only
-ever references those. Curated captions and EXIF travel with each file in R2 as custom
-metadata, which keeps the repository free of content: publishing a new photograph is an
-upload, not a commit.
+The masters are 6016×4016 WebP at quality 85, 1–8 MB each — they were PNGs of 110–140 MB
+until they were re-encoded in place with their metadata carried over. Each one has four
+pre-generated WebP derivatives, and the gallery only ever references those. Curated
+captions and EXIF travel with each file in R2 as custom metadata, which keeps the
+repository free of content: publishing a new photograph is an upload, not a commit.
 
 ```
 R2 bucket "assets"
- ├── <name>.png                    originals (never loaded by the page)
- └── d/{w2200,w800,lqip}/<name>.webp
+ ├── <name>.webp                    masters (never loaded by the page)
+ └── d/{w2200,w1600,w800,lqip}/<name>.webp
       │
       ├── assets.fahadfaruqi.com/<key>            images
       └── assets.fahadfaruqi.com/api/metadata     listing + captions + EXIF
@@ -85,16 +85,17 @@ the production URLs are used, which is what CI does.
 
 ## Images and metadata
 
-Each original in the bucket needs three WebP siblings, which the app derives from the
+Each master in the bucket needs four WebP siblings, which the app derives from the
 key by convention:
 
 | Key | Width | Used for |
 | --- | --- | --- |
 | `d/w2200/<name>.webp` | 2200 | viewer |
+| `d/w1600/<name>.webp` | 1600 | 2× displays |
 | `d/w800/<name>.webp` | 800 | grid |
 | `d/lqip/<name>.webp` | 24 | blur-up placeholder |
 
-Captions come from custom metadata on the original — `set`, `number`, `title`,
+Captions come from custom metadata on the master — `set`, `number`, `title`,
 `alttext`, `description` — alongside the EXIF the camera wrote. The Worker returns both
 and filters the `d/` prefix out of the listing, so derivatives never show up as
 photographs. `metadata-api/README.md` documents the API, `scripts/README.md` the CLI

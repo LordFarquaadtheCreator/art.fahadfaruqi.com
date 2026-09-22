@@ -37,11 +37,12 @@ type Object struct {
 // ObjectInfo is the state of a single object: its generated fields plus the
 // custom metadata it currently carries.
 type ObjectInfo struct {
-	Key         string
-	Size        int64
-	ETag        string
-	ContentType string
-	Metadata    map[string]string
+	Key          string
+	Size         int64
+	ETag         string
+	ContentType  string
+	LastModified time.Time
+	Metadata     map[string]string
 }
 
 func New(cfg *appconfig.Config) (*Client, error) {
@@ -134,11 +135,12 @@ func (c *Client) Head(key string) (*ObjectInfo, error) {
 	}
 
 	return &ObjectInfo{
-		Key:         key,
-		Size:        aws.ToInt64(out.ContentLength),
-		ETag:        aws.ToString(out.ETag),
-		ContentType: aws.ToString(out.ContentType),
-		Metadata:    out.Metadata,
+		Key:          key,
+		Size:         aws.ToInt64(out.ContentLength),
+		ETag:         aws.ToString(out.ETag),
+		ContentType:  aws.ToString(out.ContentType),
+		LastModified: aws.ToTime(out.LastModified),
+		Metadata:     out.Metadata,
 	}, nil
 }
 

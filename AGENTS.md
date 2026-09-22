@@ -15,8 +15,8 @@ images and through a Worker for the listing.
 
 ```
 Cloudflare R2 bucket "assets"
-  ├── <name>.png                  originals, 110-140 MB, never loaded by the gallery
-  └── d/{w2200,w800,lqip}/<name>.webp   derivatives, the only images the page loads
+  ├── <name>.webp                 masters, 6016×4016 q85, 1-8 MB, never loaded by the page
+  └── d/{w2200,w1600,w800,lqip}/<name>.webp   derivatives, the only images the page loads
         │
         ├── https://assets.fahadfaruqi.com/<key>            images, straight from R2
         └── https://assets.fahadfaruqi.com/api/metadata     Worker → { count, objects[] }
@@ -115,6 +115,10 @@ Consequences to keep in mind:
 
 - Custom metadata is spread over the generated fields, so the five generated names
   are effectively reserved — a metadata key named `url` or `etag` overwrites it.
+- `uploaded` is R2's own timestamp, so any re-upload resets it, and the gallery reads
+  it as the set's date. `create --inherit <ext>` writes the original's value into
+  custom metadata, and because custom metadata is spread over the generated fields
+  that value wins.
 - `fnumber` and `focallength` arrive as rationals (`7/2`, `18/1`), `exposuretime`
   as `1/60`, `datetimeoriginal` as an ISO string with offset. `src/lib/utils/exif.ts`
   is the only place that should format these.
@@ -130,9 +134,12 @@ Consequences to keep in mind:
 
 ## Image derivatives
 
-Originals are 6016×4016 PNGs at 110–140 MB. Nothing in the app loads them. Every
-original is expected to have four WebP siblings, and `src/lib/utils/variants.ts`
-derives the URL from the original key by stripping the extension:
+Masters are 6016×4016 WebP at quality 85, 1–8 MB each. Nothing in the app loads them.
+Every master is expected to have four WebP siblings, and `src/lib/utils/variants.ts`
+derives the URL from the master's key by stripping the extension. The masters were PNGs
+of 110–140 MB until they were re-encoded in place — same key, new extension — with their
+metadata carried over by `create --inherit`, which is what keeps the key and its
+derivatives aligned:
 
 | Key | Width | Quality | Used for |
 | --- | --- | --- | --- |
@@ -149,7 +156,7 @@ A missing derivative is a broken image in the gallery with no runtime error, bec
 the URL is built by convention rather than looked up. After any upload, verify:
 
 ```sh
-for v in w2200 w800 lqip; do
+for v in w2200 w1600 w800 lqip; do
   curl -s -o /dev/null -w "d/$v/<name>.webp %{http_code}\n" \
     "https://assets.fahadfaruqi.com/d/$v/<name>.webp"
 done
@@ -163,6 +170,8 @@ reads the metadata API, skips derivatives that already return 200, and uploads t
 `cache-control: public, max-age=31536000, immutable`. If it is gone, rewriting it is
 a small job: read the listing, resize to the four widths above, upload to the four
 `d/` prefixes. It needs R2 credentials, which are in `scripts/config.yaml` (gitignored).
+Its source bytes come from each object's `url`, which is now the WebP master, so a re-run
+is one more lossy generation: regenerate from a fresh export rather than repeatedly.
 
 ## The WebGL layer
 
@@ -550,7 +559,7 @@ Against production, no credentials needed:
 curl -s https://art.fahadfaruqi.com/ | grep -o '<link rel="icon"[^>]*>'
 curl -s "https://assets.fahadfaruqi.com/api/metadata?cb=1" \
   | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["count"]); print(sorted(d["objects"][0]))'
-for v in w2200 w800 lqip; do curl -s -o /dev/null -w "$v %{http_code}\n" \
+for v in w2200 w1600 w800 lqip; do curl -s -o /dev/null -w "$v %{http_code}\n" \
   "https://assets.fahadfaruqi.com/d/$v/<name>.webp"; done
 ```
 

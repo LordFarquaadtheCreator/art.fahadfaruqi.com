@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -21,6 +22,12 @@ func newCreateCmd() *cobra.Command {
 	}
 
 	addTargetFlags(cmd)
+
+	cmd.Flags().String(
+		"inherit",
+		"",
+		"Upload with the metadata of the existing object of the same name and this extension, without prompting, e.g. --inherit .png",
+	)
 
 	return cmd
 }
@@ -56,13 +63,41 @@ func runCreate(cmd *cobra.Command, args []string) {
 
 	client := newClient()
 
-	defaultSet := ""
-	var uploads []struct {
+	inherit, _ := cmd.Flags().GetString("inherit")
+
+	type pending struct {
 		path     string
 		metadata *exif.Metadata
 	}
 
+	defaultSet := ""
+	var uploads []pending
+
 	for i, filePath := range filePaths {
+		if inherit != "" {
+			// A re-encoded file replaces the item it was made from, so it takes that
+			// item's metadata instead of being asked for the same answers again. The
+			// upload time travels with it, because R2's own timestamp resets to now on
+			// every upload and the gallery reads that value as the set's date.
+			sibling := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)) + inherit
+
+			info, err := client.Head(sibling)
+			if err != nil {
+				log.Fatalf("No object to inherit metadata from for %s: %v", filepath.Base(filePath), err)
+			}
+
+			metadata, err := exif.FromMap(info.Metadata)
+			if err != nil {
+				log.Fatalf("Metadata on %s cannot be inherited: %v", sibling, err)
+			}
+
+			metadata.Exif["uploaded"] = info.LastModified.UTC().Format("2006-01-02T15:04:05.000Z")
+
+			uploads = append(uploads, pending{filePath, metadata})
+
+			continue
+		}
+
 		metadata, err := exif.Extract(filePath)
 		if err != nil {
 			log.Printf("Warning: failed to extract EXIF from %s: %v", filePath, err)
@@ -83,10 +118,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 			defaultSet = metadata.Set
 		}
 
-		uploads = append(uploads, struct {
-			path     string
-			metadata *exif.Metadata
-		}{filePath, metadata})
+		uploads = append(uploads, pending{filePath, metadata})
 	}
 
 	var wg sync.WaitGroup
