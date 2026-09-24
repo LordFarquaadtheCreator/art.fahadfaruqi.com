@@ -1,7 +1,4 @@
 <script lang="ts">
-	// The reference's principal motion motif: the line is cut into slices, each slice
-	// masks the full text and slides it in from its own offset, so the words assemble
-	// character by character.
 	let {
 		text,
 		segments = 16,
@@ -20,15 +17,20 @@
 			animationDelay: `${delay + index * stagger}s`
 		}))
 	);
+
+	const geometry = $derived.by(() => {
+		const share = (100 / segments + 0.01) / 100;
+		return { step: 100 / segments / share, copyWidth: 100 / share };
+	});
 </script>
 
-<span class="split" aria-hidden="true">
+<span class="split title-attention" aria-hidden="true">
 	<span class="split__spacer">{text}</span>
 	{#each slices as slice (slice.index)}
 		<span class="split__window" style="left: {slice.left}%; width: {slice.width}%">
 			<span
 				class="split__run"
-				style="left: {slice.index * -100}%; --from: {slice.from}; animation-delay: {slice.animationDelay}; animation-duration: {duration}s"
+				style="left: {slice.index * -geometry.step}%; width: {geometry.copyWidth}%; --from: {slice.from}; animation-delay: {slice.animationDelay}; animation-duration: {duration}s"
 			>
 				{text}
 			</span>
@@ -40,7 +42,6 @@
 	.split {
 		position: relative;
 		display: block;
-		white-space: nowrap;
 	}
 
 	.split__spacer {
@@ -58,7 +59,6 @@
 		position: absolute;
 		top: 0;
 		display: block;
-		white-space: nowrap;
 		will-change: transform;
 		animation-name: assemble;
 		animation-timing-function: cubic-bezier(0.16, 0.84, 0.28, 1);

@@ -86,7 +86,7 @@
 
 <!-- Hero -->
 <section class="hero shell">
-	<h1 class="hero__name" aria-label="Fahad Faruqi">
+	<h1 class="title-attention" aria-label="Fahad Faruqi">
 		<SplitText text="Fahad Faruqi" />
 	</h1>
 
@@ -154,15 +154,6 @@
 <style>
 	.hero {
 		padding-block: clamp(3rem, 12vh, 9rem) clamp(4rem, 14vh, 11rem);
-	}
-
-	.hero__name {
-		margin: 0;
-		font-size: var(--display);
-		font-weight: 600;
-		letter-spacing: -0.045em;
-		line-height: 0.86;
-		text-transform: uppercase;
 	}
 
 	.hero__meta {

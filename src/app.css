@@ -188,7 +188,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 
 .title-attention {
 	margin: 0;
-	font-size: clamp(4.5rem, 22vw, 18rem);
+	font-size: clamp(4.5rem, 22vw, 12rem);
 	font-weight: 600;
 	line-height: 0.82;
 	letter-spacing: -0.05em;

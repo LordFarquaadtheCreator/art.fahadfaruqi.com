@@ -4,22 +4,13 @@
 </svelte:head>
 
 <section class="about shell">
-	<h1 class="about__title">About</h1>
+	<h1 class="title-attention">About</h1>
 	<p class="about__line label">Nothing written here yet.</p>
 </section>
 
 <style>
 	.about {
 		padding-block: clamp(3rem, 12vh, 9rem) var(--block);
-	}
-
-	.about__title {
-		margin: 0;
-		font-size: var(--display);
-		font-weight: 600;
-		letter-spacing: -0.045em;
-		line-height: 0.86;
-		text-transform: uppercase;
 	}
 
 	.about__line {
