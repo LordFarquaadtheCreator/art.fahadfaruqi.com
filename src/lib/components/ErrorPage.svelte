@@ -39,7 +39,7 @@
 </svelte:head>
 
 <section class="error shell">
-	<p class="title-attention fade-in-animation">{status}</p>
+	<p class="title large fade-in-animation">{status}</p>
 	<div class="hairline error__copy">
 		<p class="title fade-in-animation">{copy.title}</p>
 		<p class="subtitle fade-in-animation">{copy.subtitle}</p>

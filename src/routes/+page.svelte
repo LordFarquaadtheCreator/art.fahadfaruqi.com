@@ -86,7 +86,7 @@
 
 <!-- Hero -->
 <section class="hero shell">
-	<h1 class="title-attention" aria-label="Fahad Faruqi">
+	<h1 class="title large" aria-label="Fahad Faruqi">
 		<SplitText text="Fahad Faruqi" />
 	</h1>
 

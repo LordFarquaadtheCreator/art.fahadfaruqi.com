@@ -5,17 +5,9 @@
 
 	let { set, index }: { set: PhotoSet; index: number } = $props();
 
-	// The card replays every time the set comes back into view, which is why the class is
-	// toggled and not left on: an animation only restarts when it is re-applied.
 	let entered = $state(false);
-
-	// The card has left; its lines are on their way to the header's slots.
 	let pinned = $state(false);
-
-	// Set once the sentinel is actually being watched, so the header only ever hides itself
-	// when something is running to reveal it again.
 	let measuring = $state(false);
-
 	let card = $state<HTMLElement>();
 	let cardIndex = $state<HTMLElement>();
 	let cardName = $state<HTMLElement>();
@@ -26,7 +18,6 @@
 
 	function onEnter(node: HTMLElement, notify: (value: boolean) => void) {
 		if (typeof IntersectionObserver === 'undefined') {
-			// Nothing to observe with: show the card rather than leave it waiting.
 			notify(true);
 			return { destroy: () => {} };
 		}
@@ -182,8 +173,6 @@
 		photos.reduce((newest, photo) => (photo.uploaded > newest ? photo.uploaded : newest), '').slice(0, 10);
 </script>
 
-<!-- The header below already gives this set a heading and a count, so the card is a
-     visual announcement of the same facts: nothing here is read out twice. -->
 <section
 	class="card"
 	class:card--in={entered && !pinned}
@@ -194,7 +183,7 @@
 >
 	<div class="card__inner shell">
 		<span class="label num card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
-		<h3 class="card__name" bind:this={cardName}>{set.name}</h3>
+		<h3 class="title medium" bind:this={cardName}>{set.name}</h3>
 		<span class="label num card__meta" bind:this={cardCount}>
 			{set.photos.length} plates &middot; {latest(set.photos)}
 		</span>
@@ -230,15 +219,6 @@
 		display: grid;
 		gap: 0.5rem;
 		width: 100%;
-	}
-
-	.card__name {
-		margin: 0;
-		font-size: clamp(2.25rem, 8vw, 6rem);
-		font-weight: 600;
-		line-height: 0.95;
-		letter-spacing: -0.03em;
-		text-transform: uppercase;
 	}
 
 	.card__index,

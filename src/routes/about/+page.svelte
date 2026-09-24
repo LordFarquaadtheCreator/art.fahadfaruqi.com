@@ -4,7 +4,7 @@
 </svelte:head>
 
 <section class="about shell">
-	<h1 class="title-attention">About</h1>
+	<h1 class="title large">About</h1>
 	<p class="hairline fade-in-animation label">Nothing written here yet.</p>
 </section>
 

@@ -154,6 +154,18 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	color: var(--muted);
 }
 
+.small {
+	font-size: 1rem !important;
+}
+
+.medium {
+	font-size: clamp(2.25rem, 8vw, 6rem) !important;
+}
+
+.large {
+	font-size: clamp(4.5rem, 22vw, 12rem) !important;
+}
+
 .label--fg {
 	color: var(--fg);
 }
@@ -174,8 +186,11 @@ html[data-webgl='off'] .plate__frame .plate__image {
 .title {
 	margin: 0;
 	max-width: 34ch;
+	font-weight: 600;
 	font-size: var(--lead);
-	letter-spacing: -0.02em;
+	letter-spacing: -0.05em;
+	text-transform: uppercase;
+	line-height: 0.82;
 }
 
 .subtitle {
@@ -184,15 +199,6 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	font-size: clamp(0.875rem, 1.5vw, 1.125rem);
 	line-height: 1.5;
 	color: var(--muted);
-}
-
-.title-attention {
-	margin: 0;
-	font-size: clamp(4.5rem, 22vw, 12rem);
-	font-weight: 600;
-	line-height: 0.82;
-	letter-spacing: -0.05em;
-	text-transform: uppercase;
 }
 
 .hairline {
@@ -248,15 +254,6 @@ html[data-webgl='off'] .plate__frame .plate__image {
 
 .nav-button:disabled::after {
 	transform: scaleX(0);
-}
-
-.nav-button--small {
-	font-size: 1rem !important;
-	gap: 0.25rem;
-}
-
-.nav-button--small::after {
-	bottom: -0.15rem;
 }
 
 /* Animation */

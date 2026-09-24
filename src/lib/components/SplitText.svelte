@@ -24,7 +24,7 @@
 	});
 </script>
 
-<span class="split title-attention" aria-hidden="true">
+<span class="split title large" aria-hidden="true">
 	<span class="split__spacer">{text}</span>
 	{#each slices as slice (slice.index)}
 		<span class="split__window" style="left: {slice.left}%; width: {slice.width}%">
