@@ -9,21 +9,12 @@
 	let loaded = $state(false);
 	let ratio = $state<number | null>(null);
 
-	// The delay is the feature: pass over a plate and nothing happens, rest on it and the
-	// note arrives. Nothing about the photograph is behind it — the caption below still
-	// carries the title, and the viewer carries everything — so this is an addition to
-	// what is already readable, never the only way to read it.
 	const DWELL_MS = 500;
 
 	let revealed = $state(false);
-	// The keyboard's focus state is component state, not something a selector decides:
-	// `:focus-visible` cannot be verified while the page is not the focused window, and the
-	// caption's readout has to answer to the keyboard the same way it answers to a pointer.
 	let focused = $state(false);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
-	// Hover is a desktop affordance. On a touch device there is no pointer to rest, so the
-	// equivalent of hovering is dwelling on the plate while it sits in view.
 	const canHover =
 		typeof window !== 'undefined' &&
 		window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -48,7 +39,6 @@
 
 	$effect(() => stopTimer);
 
-	/** Touch path: reveal once the plate has been sitting in view for the same dwell. */
 	function dwellWhileVisible(node: HTMLElement) {
 		if (canHover || typeof IntersectionObserver === 'undefined') return;
 
@@ -69,8 +59,6 @@
 		};
 	}
 
-	// The pointer carries the plate's number while it is over the grid, so you always
-	// know where in the set you are without reading the caption.
 	function carryIndex() {
 		cursor.label = String(photo.number).padStart(2, '0');
 		cursor.active = true;
@@ -80,8 +68,6 @@
 		cursor.active = false;
 	}
 
-	// The placeholder carries the photo's aspect ratio, so space is reserved before
-	// the full image arrives and nothing shifts.
 	function captureRatio(event: Event) {
 		const image = event.currentTarget as HTMLImageElement;
 		if (image.naturalWidth > 0 && image.naturalHeight > 0) {
@@ -118,8 +104,6 @@
 			onfocus={() => {
 				focused = true;
 				carryIndex();
-				// A keyboard visitor has already committed to the plate; there is nothing
-				// to wait for, so the note arrives at once.
 				arm(0);
 			}}
 			onblur={() => {
@@ -181,9 +165,6 @@
 		background: var(--bg-elev);
 	}
 
-	/* Below the 12-column breakpoint every plate is full-width, which makes a portrait
-	   photograph several screens tall. Cap the width against the viewport height instead.
-	   The cap belongs on the wrapper, so the note stays inside the photograph's edges. */
 	@media (max-width: 1023px) {
 		.plate__media {
 			max-width: min(100%, calc(var(--ratio, 1.5) * 74vh));
@@ -215,21 +196,11 @@
 		opacity: 1;
 	}
 
-	/* The quad draws over this image rather than replacing it. The image stays the
-	   photograph: if the layer cannot start, cannot fetch a plate's bytes, or loses its
-	   context, there is simply no effect — never a missing picture.
-
-	   This scale is the hover affordance only while the layer is off (see the escape
-	   hatch in app.css); with the layer running, the quad covers it and the zoom is
-	   done in the shader's UV space instead. */
 	.plate__frame:hover .plate__image,
 	.plate__frame:focus-visible .plate__image {
 		transform: scale(1.025);
 	}
 
-	/* The note lands on the photograph's lower edge, over a scrim, rather than in the
-	   caption below it: the caption sits inside the grid, so growing it would shove every
-	   row beneath it down and shift the page while it is being read. */
 	.plate__note {
 		position: absolute;
 		left: 0;
@@ -282,9 +253,6 @@
 		border-top: 1px solid var(--line);
 	}
 
-	/* The caption's rule draws itself from the left as the pointer arrives, so the
-	   hover state has a direction instead of just a colour change. It draws in amber:
-	   this is the active plate. */
 	.plate__caption::after {
 		content: '';
 		position: absolute;
@@ -309,8 +277,6 @@
 		transition: color 0.3s ease;
 	}
 
-	/* The plate's number under the pointer is a live readout, so it is one of the few
-	   pieces of text that goes amber. */
 	.plate:hover .plate__number,
 	.plate__media--focused + .plate__caption .plate__number {
 		color: var(--accent);
@@ -322,8 +288,6 @@
 		letter-spacing: -0.01em;
 	}
 
-	/* The caption's readout is set as a field instrument reports it: capitalised, with
-	   the units attached and the figures tabular so the columns line up between plates. */
 	.plate__exif {
 		grid-column: 2;
 		font-size: 0.6875rem;
