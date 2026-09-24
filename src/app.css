@@ -69,8 +69,6 @@ body {
 		color 0.4s ease;
 }
 
-/* The display face is claimed by element rather than by component, so a heading
-   anywhere on the site gets it without every component restating the family. */
 h1,
 h2,
 h3,
@@ -177,7 +175,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 }
 
 .large {
-	font-size: clamp(4.5rem, 22vw, 12rem) !important;
+	font-size: clamp(4.5rem, 11vw, 11rem) !important;
 }
 
 .label--fg {
@@ -200,7 +198,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 .title {
 	margin: 0;
 	max-width: 34ch;
-	font-weight: 400;
+	font-weight: 600;
 	font-size: var(--lead);
 	letter-spacing: -0.05em;
 	text-transform: uppercase;
