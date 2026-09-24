@@ -40,7 +40,7 @@
 	</main>
 
 	<footer class="readouts shell">
-		<span class="label readout">
+		<span class="label num readout">
 			{#if message}{status} {message}{:else}{status}{/if}
 		</span>
 		<span class="label readout readouts__path">{path}</span>

@@ -38,6 +38,7 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/routes/+page.svelte` | the page: fetch, set filtering, hero, gallery, footer |
 | `src/routes/+layout.svelte` | font import, favicon, global CSS entry |
 | `src/routes/+layout.ts` | `prerender = true`, `trailingSlash = 'never'` |
+| `src/routes/+error.svelte` | the error boundary: status and message from `page`, handed to `ErrorPage` |
 | `src/lib/utils/metadata.ts` | API types, fetch, mapping to the `Photo` shape |
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`), date formatting |
 | `src/lib/utils/group-images.ts` | grouping into sets, slugify, ordering |
@@ -56,9 +57,10 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/components/SplitText.svelte` | per-character assembly used for the display type |
 | `src/lib/components/ThemeToggle.svelte` | dark/light switch |
 | `src/lib/components/Atmosphere.svelte` | background glow layer + foreground grain |
+| `src/lib/components/ErrorPage.svelte` | the 404/failure page: status, line, the address that missed, way back |
 | `src/app.css` | Tailwind v4 entry, palette and layout tokens |
 | `src/app.html` | pre-paint theme resolution; must stay in step with the toggle |
-| `static/` | `404.html`, `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
+| `static/` | `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
 | `metadata-api/` | the Worker that serves `/api/metadata` |
 | `scripts/` | Go CLI for managing the bucket. **Go only** — see Rules |
 | `website-draft.md` | the design brief this build follows, including the reference |
@@ -426,9 +428,8 @@ The canvas is painted before the stylesheets are. `<html>` carries an inline
   with its own canvas — which follows the *used* color-scheme, so it is white on a machine
   set to light mode. Note this is a real gap but it is **not** the flash that gets
   reported: what people actually saw was the WebGL layer losing its context, above. The
-  literals duplicate `--bg`, as in
-  `404.html`: nothing can read a custom property that early. `ThemeToggle` repaints the
-  same surfaces on toggle, the meta included.
+  literals duplicate `--bg`: nothing can read a custom property that early. `ThemeToggle`
+  repaints the same surfaces on toggle, the meta included.
 
 ### The instrument pass
 
@@ -542,14 +543,30 @@ gh run list --limit 40 --json headSha,conclusion \
 bun run worker:deploy        # cd metadata-api && wrangler deploy
 ```
 
-**The 404 page** — `static/404.html` is a standalone page, copied into the artifact,
-which GitHub Pages serves for any path that is not a file in the deploy, with a 404
-status (confirmed: `custom_404: false`, and the Pages default only applies when no
-`404.html` exists). It deliberately avoids hashed asset names and JavaScript so it
-renders even if the bundle fails, which means its design tokens are a copy of
-`src/app.css` rather than a reference to it — update both if the palette moves.
-`adapter-static` never emits a `404.html` (it only writes a `fallback` when one is
-configured), so this file is the only 404 handling on the site.
+**The 404 page** — `svelte.config.js` passes `fallback: '404.html'` to `adapter-static`,
+which writes `build/404.html` as an app shell. GitHub Pages serves that file for any path
+that is not a file in the deploy, with a 404 status (confirmed: `custom_404: false`, and
+the Pages default only applies when no `404.html` exists) — without it Pages shows its own
+generic page. The shell carries no route payload, so the router resolves the address that
+was actually asked for, finds no route, and renders the root error page with status 404 and
+the message `Not Found`, which is what `src/routes/+error.svelte` reads. A prerendered
+page would not do: it hydrates against the route it was built for, not against the
+address it is served at.
+
+Because `page.url` is the address that was asked for, `ErrorPage.svelte` can print it: the
+readout line at the foot of the page carries the status and the address that missed, which
+is the only place the visitor can see that, and the only clue to which link is broken.
+
+The cost of the fallback is that the 404's markup arrives with the bundle rather than in
+the file — it is the one page on the site that is empty without script. Everything about
+how it looks is still the site's own, because `ErrorPage.svelte` reads the tokens in
+`src/app.css` and mounts `Atmosphere.svelte` on top, rather than carrying a second copy
+of the palette the way the old `static/404.html` did. Verify both halves from production:
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" https://art.fahadfaruqi.com/no-such-path   # 404
+curl -s https://art.fahadfaruqi.com/no-such-path | grep -c '_app/immutable'         # >0
+```
 
 ## Verification
 

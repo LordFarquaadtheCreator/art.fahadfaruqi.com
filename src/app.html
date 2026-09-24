@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-theme="dark" style="background: #0a0a0a; color-scheme: dark">
+<html lang="en" data-theme="dark" style="background: %theme.canvas.dark%; color-scheme: dark">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="color-scheme" content="dark" />
-		<meta name="theme-color" content="#0a0a0a" />
+		<meta name="theme-color" content="%theme.canvas.dark%" />
 		<meta name="text-scale" content="scale" />
 		<script>
 			try {
@@ -12,8 +12,11 @@
 				const root = document.documentElement;
 				root.dataset.theme = light ? 'light' : 'dark';
 				root.style.colorScheme = light ? 'light' : 'dark';
-				root.style.backgroundColor = light ? '#f2f1ed' : '#0a0a0a';
-			} catch (e) {console.log(e)}
+				root.style.backgroundColor = light ? '%theme.canvas.light%' : '%theme.canvas.dark%';
+			} catch (e) {
+			    // <html> sets dark default
+				console.error('[theme] could not read the stored preference', e);
+			}
 		</script>
 		%sveltekit.head%
 	</head>
