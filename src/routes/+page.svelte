@@ -135,11 +135,9 @@
 
 <!-- Images -->
 {#if status === 'ready' && visibleSets.length > 0}
-	<div class="filters shell">
-		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
-	</div>
+    <SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
 
-	<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
+    <GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
 {/if}
 
 <!-- Individual Photo Lightbox -->

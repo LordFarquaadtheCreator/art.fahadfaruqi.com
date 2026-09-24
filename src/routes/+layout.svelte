@@ -39,7 +39,7 @@
 <div class="site">
 	<Header {scrolled} {progress} />
 
-	<main>
+	<main class="shell">
 		{@render children()}
 	</main>
 
