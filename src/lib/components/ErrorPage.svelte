@@ -9,9 +9,28 @@
 
 	let { status, message, path }: Props = $props();
 
-	// todo: wrap in a switch
-	const title = $derived(status === 404 ? 'You must be lost.' : (message ?? ''));
-	const subtitle = 'These are not the Jedi you are looking for'
+	const copy = $derived.by(() => {
+		switch (status) {
+			case 404:
+				return {
+					title: 'You must be lost.',
+					subtitle: 'There\'s nothing here for you.',
+					action: 'My bad, let me get out of here'
+				};
+			case 500:
+				return {
+					title: 'Something broke on my end.',
+					subtitle: 'Nothing to do with you. Try again in a moment.',
+					action: 'Try the gallery again'
+				};
+			default:
+				return {
+					title: message ?? 'Something went wrong.',
+					subtitle: 'This is embarassing.',
+					action: 'Back to the gallery'
+				};
+		}
+	});
 </script>
 
 <svelte:head>
@@ -21,14 +40,15 @@
 
 <section class="error shell">
 	<p class="title-attention fade-in-animation">{status}</p>
-	<p class="title fade-in-animation">{title}</p>
-	<p class="subtitle fade-in-animation">{subtitle}</p>
+	<p class="title fade-in-animation">{copy.title}</p>
+	<p class="subtitle fade-in-animation">{copy.subtitle}</p>
 	<a
 		class="nav-button label error__back fade-in-animation"
 		href="/"
 		use:navLine
 	>
-		Back to the gallery <span aria-hidden="true">→</span>
+		{copy.action}
+		<span aria-hidden="true">→</span>
 	</a>
 </section>
 
@@ -41,7 +61,7 @@
 		gap: clamp(1.25rem, 4vh, 2.5rem);
 		padding-block: clamp(2rem, 8vh, 6rem);
 	}
-	
+
 	.error__back {
 		align-self: flex-start;
 	}
