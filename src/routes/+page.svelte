@@ -153,7 +153,7 @@
 
 <style>
 	.hero {
-		padding-block: clamp(3rem, 12vh, 9rem) clamp(4rem, 14vh, 11rem);
+		padding-block: clamp(3rem, 12vh, 9rem) clamp(1rem, 3vh, 3rem);
 	}
 
 	.hero__meta {
@@ -316,10 +316,7 @@
 
 	/* --------------------------------------------------------------- the filter */
 
-	/* Above the grid it filters, so the sets stay within reach of the photographs, and
-	   clear of the sticky bar when a filter change scrolls back up to it. */
 	.filters {
-		padding-block: 1.1rem;
 		border-bottom: 1px solid var(--line);
 		scroll-margin-top: calc(var(--header-h) + 0.5rem);
 	}

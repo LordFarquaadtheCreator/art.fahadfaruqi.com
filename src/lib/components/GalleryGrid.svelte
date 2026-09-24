@@ -12,9 +12,6 @@
 		onOpen
 	}: { sets: PhotoSet[]; pass?: number; onOpen: (photo: Photo, set: PhotoSet) => void } = $props();
 
-	// Two identical entrances alternating by pass, because a CSS animation only restarts
-	// when its name changes — this is what re-plays the wipe on every filter change
-	// without re-mounting a single plate.
 	const wipe = $derived(pass % 2 === 0 ? 'a' : 'b');
 </script>
 
@@ -42,8 +39,7 @@
 
 <style>
 	.gallery {
-		padding-block: clamp(2rem, 6vh, 5rem) var(--block);
-		/* The header is sticky, so a scroll to the grid has to clear it. */
+		padding-block: clamp(1rem, 3vh, 3rem) clamp(1rem, 3vh, 3rem);
 		scroll-margin-top: calc(var(--header-h) + 0.5rem);
 	}
 
