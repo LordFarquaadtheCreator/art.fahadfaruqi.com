@@ -55,6 +55,11 @@ html {
 	scroll-behavior: smooth;
 }
 
+html,
+body {
+	overflow-x: clip;
+}
+
 body {
 	margin: 0;
 	background: var(--bg);
@@ -63,7 +68,6 @@ body {
 	font-size: 1rem;
 	line-height: 1.45;
 	font-synthesis-weight: none;
-	overflow-x: hidden;
 	transition:
 		background-color 0.4s ease,
 		color 0.4s ease;
@@ -118,21 +122,38 @@ img {
 	max-width: 100%;
 }
 
+@property --header-h {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 3rem;
+}
+
 :root {
 	--gutter: clamp(1rem, 3.2vw, 3rem);
 	--block: clamp(4rem, 12vh, 11rem);
 	--display: clamp(3.25rem, 13.5vw, 12rem);
 	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
-	--header-h: 3rem;
+	--label-size: clamp(0.6875rem, 0.45vw + 0.5625rem, 0.875rem);
+	--small-size: clamp(1rem, 0.4vw + 0.85rem, 1.25rem);
+	--header-pad-block: clamp(0.75rem, 0.45vw + 0.5rem, 1.15rem);
+	--header-pad-scrolled: clamp(0.5rem, 0.35vw + 0.32rem, 0.85rem);
+	--header-gap: clamp(0.75rem, 1.2vw + 0.5rem, 1.5rem);
+	--tabs-gap: clamp(1.1rem, 1.6vw + 0.35rem, 2.25rem);
+	--footer-pad-block: clamp(2rem, 6vh + 0.6vw, 4.5rem);
+	--footer-gap: clamp(1rem, 1.6vw, 2.5rem);
+	--header-h: calc(
+		2 * var(--header-pad-block) + 1px +
+			max(
+				0.25rem + 0.82 * var(--small-size),
+				0.25rem + 1.45 * var(--label-size)
+			)
+	);
 }
 
 .shell {
 	padding-inline: var(--gutter);
 }
 
-/* The WebGL plate layer appends its own canvas. It sits above the photographs but below
-   the header and the viewer, never takes pointer events, and stays hidden until it has
-   actually produced a frame — an enhancement that never draws nothing to show. */
 .plate-canvas {
 	position: fixed;
 	inset: 0;
@@ -145,11 +166,6 @@ img {
 	visibility: visible;
 }
 
-/*
- * Escape hatch. Setting data-webgl="off" on <html> stops the layer's loop and takes the
- * canvas out of the page. The photographs are plain <img> elements either way, so this
- * only ever removes the effect.
- */
 html[data-webgl='off'] .plate-canvas {
 	display: none !important;
 }
@@ -160,14 +176,14 @@ html[data-webgl='off'] .plate__frame .plate__image {
 
 .label {
 	font-family: var(--font-sans);
-	font-size: 0.6875rem;
+	font-size: var(--label-size);
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
 	color: var(--muted);
 }
 
 .small {
-	font-size: 1rem !important;
+	font-size: var(--small-size) !important;
 }
 
 .medium {
@@ -268,7 +284,6 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	transform: scaleX(0);
 }
 
-/* Animation */
 .fade-in-animation {
 	animation: fade-in-animation 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both;
 	animation-delay: calc((sibling-index() - 1) * 80ms);
@@ -296,8 +311,6 @@ html[data-webgl='off'] .plate__frame .plate__image {
 		animation-delay: 0ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.001ms !important;
-		/* Delays are waits, so they go too: without this the card's lines would still sit out
-		   their 0.32s before fading, and the plates' reveals would still stagger. */
 		transition-delay: 0s !important;
 	}
 }

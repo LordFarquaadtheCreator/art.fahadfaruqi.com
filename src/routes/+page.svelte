@@ -85,7 +85,6 @@
 
 <Hero {status} photoCount={photos.length} setCount={sets.length} />
 
-<!-- Error State -->
 {#if status === 'error'}
 	<section class="state">
 		<p class="state__title fade-in-animation">The index could not be loaded.</p>
@@ -94,7 +93,6 @@
 	</section>
 {/if}
 
-<!-- Loading State -->
 {#if status === 'loading'}
 	<section class="loading" role="status" aria-live="polite">
 		<span class="loading__hairline" aria-hidden="true"></span>
@@ -112,14 +110,12 @@
 	</section>
 {/if}
 
-<!-- Images -->
 {#if status === 'ready' && visibleSets.length > 0}
     <SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
 
     <GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
 {/if}
 
-<!-- Individual Photo Lightbox -->
 <Lightbox
 	photos={visiblePhotos}
 	index={viewerIndex}
@@ -141,6 +137,7 @@
 		margin: 0 0 1.5rem;
 		font-size: 0.75rem;
 		color: var(--muted);
+		overflow-wrap: anywhere;
 	}
 
 	.state__retry {
@@ -162,15 +159,11 @@
 		transform: translate3d(0, 0, 0) scale(0.98);
 	}
 
-	/* ---------------------------------------------------------------- the wait */
-
 	.loading {
 		position: relative;
 		padding-block: 0 var(--block);
 	}
 
-	/* Indeterminate on purpose: the API reports no progress, so the line travels rather
-	   than filling. With reduced motion it stops travelling and simply sits there. */
 	.loading__hairline {
 		position: absolute;
 		top: 0;
@@ -276,13 +269,5 @@
 			transform: translate3d(100%, 0, 0);
 		}
 	}
-
-	/* --------------------------------------------------------------- the filter */
-
-	.filters {
-		border-bottom: 1px solid var(--line);
-		scroll-margin-top: calc(var(--header-h) + 0.5rem);
-	}
-
 
 </style>

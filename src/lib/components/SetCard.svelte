@@ -22,9 +22,7 @@
 		}
 
 		const observer = new IntersectionObserver(
-			// Only an arrival from below replays the entrance. Coming back up into the card
-			// is a return, not an entrance, and replaying it there is what looked like the
-			// card resetting itself every time it left the viewport.
+
 			([entry]) => notify(entry.isIntersecting && entry.boundingClientRect.top > 0),
 			{ threshold: 0.4 }
 		);
@@ -33,8 +31,7 @@
 		return { destroy: () => observer.disconnect() };
 	}
 
-	// The sentinel stands where the header pins, so one observation answers both questions:
-	// the header is pinned, and the card is on its way out.
+
 	function sticky(node: HTMLElement, notify: (value: boolean) => void) {
 		if (typeof IntersectionObserver === 'undefined') {
 			return { destroy: () => {} };
@@ -42,17 +39,15 @@
 
 		const root = document.documentElement;
 		const gap = parseFloat(getComputedStyle(root).fontSize) || 16;
-		const header = parseFloat(getComputedStyle(root).getPropertyValue('--header-h')) || 3;
+		// A px length, not a number in root-em: the token is registered as a <length>, so this
+		// resolves the calc() rather than handing back its source text.
+		const header = parseFloat(getComputedStyle(root).getPropertyValue('--header-h')) || 3 * gap;
 
-		// How far above the header line the hand-off starts, in root-em. The card's content
-		// sits above its own bottom edge — the band's bottom padding — so waiting for the
-		// sentinel to clear the line means the lines are already above the top of the frame
-		// and the entire flight happens off-screen. The lead pulls it forward to where the
-		// shrink is still watchable. 0 is the strict reading of "scrolled out of frame".
+
 		const LEAD = 3.5;
 
 		const observer = new IntersectionObserver(([entry]) => notify(!entry.isIntersecting), {
-			rootMargin: `-${(header + LEAD) * gap}px 0px 0px 0px`
+			rootMargin: `-${header + LEAD * gap}px 0px 0px 0px`
 		});
 
 		observer.observe(node);
@@ -61,20 +56,7 @@
 		return { destroy: () => observer.disconnect() };
 	}
 
-	/**
-	 * Where the card's lines have to travel to sit on the header's own, and the aim that
-	 * keeps them pointed there while they travel.
-	 */
 
-	/**
-	 * Where a line sits in the page, in layout terms. Read from `offsetTop`/`offsetHeight`
-	 * and the offset parent's box rather than from the line's own rect, because that rect
-	 * carries the flight's transform: a return to the top of the page and back down would
-	 * otherwise fold the previous flight into the next one's measurement.
-	 *
-	 * The centre is the edge the flight aligns on, not the bottom — `onPinned` has the
-	 * reason.
-	 */
 	function anchor(node: HTMLElement, card: HTMLElement) {
 		const parent = (node.offsetParent as HTMLElement | null) ?? card;
 		const box = parent.getBoundingClientRect();
@@ -85,12 +67,7 @@
 		};
 	}
 
-	// The flight's own aim loop. The header keeps moving until it pins, so a landing measured
-	// once is only correct at the instant it was measured: stop mid-flight and the lines land
-	// on the slot the header would have reached, which is not where it is. Both ends are read
-	// live instead, from layout geometry that no transform can distort. The window outlasts
-	// the transition itself, so the last frame is aimed at a settled header; re-writing an
-	// unchanged value starts no new transition.
+
 	let aim = 0;
 
 	function stopAim() {
@@ -100,6 +77,10 @@
 
 	function keepAim(pairs: { node: HTMLElement; target: HTMLElement }[], card: HTMLElement) {
 		const until = performance.now() + 1500;
+		const bar = document.querySelector<HTMLElement>('.header__inner');
+		const edge = bar
+			? bar.getBoundingClientRect().right - (parseFloat(getComputedStyle(bar).paddingRight) || 0)
+			: window.innerWidth;
 		const legs = pairs.map((pair) => ({
 			...pair,
 			from: { left: 0, centre: 0 },
@@ -107,8 +88,7 @@
 		}));
 
 		const step = () => {
-			// Every read first, then every write: interleaving them forces a synchronous
-			// layout per leg, and this runs for 1.5s of frames.
+
 			for (const leg of legs) {
 				leg.from = anchor(leg.node, card);
 				const slot = leg.target.getBoundingClientRect();
@@ -116,7 +96,10 @@
 			}
 
 			for (const leg of legs) {
-				leg.node.style.setProperty('--dx', `${leg.to.left - leg.from.left}px`);
+				const scale = parseFloat(leg.node.style.getPropertyValue('--ds')) || 1;
+				const room = edge - leg.from.left - leg.node.offsetWidth * scale;
+				const dx = Math.min(leg.to.left - leg.from.left, room);
+				leg.node.style.setProperty('--dx', `${dx}px`);
 				leg.node.style.setProperty('--dy', `${leg.to.centre - leg.from.centre}px`);
 			}
 
@@ -147,11 +130,7 @@
 			const to = target.getBoundingClientRect();
 			if (!to.height) return;
 
-			// The scale is the two type sizes, not the two boxes: a line set at 96px landing on a
-			// slot set at 44px has to arrive at 44px, and the boxes only agree by accident —
-			// their line heights come from different rules. Scaling about the line's centre lands
-			// the baselines too, exactly, while both lines are set in the same face: the
-			// half-leading cancels and only the line heights differ.
+
 			node.style.setProperty('--ds', `${size(target) / size(node)}`);
 			legs.push({ node, target });
 		});
@@ -161,10 +140,10 @@
 
 	const pad = (value: number) => String(value).padStart(2, '0');
 
-	// The size a line is actually set at, whatever its clamp resolved to.
+
 	const size = (node: HTMLElement) => parseFloat(getComputedStyle(node).fontSize);
 
-	// The most recent capture date in the set, from the listing's own timestamps.
+
 	const latest = (photos: Photo[]) =>
 		photos.reduce((newest, photo) => (photo.uploaded > newest ? photo.uploaded : newest), '').slice(0, 10);
 </script>
@@ -212,6 +191,7 @@
 		display: grid;
 		gap: 0.5rem;
 		width: 100%;
+		justify-items: start;
 	}
 
 	.card__index,
@@ -250,11 +230,6 @@
 		animation: card-rule 0.9s cubic-bezier(0.16, 0.84, 0.28, 1) both;
 	}
 
-	/* Out of frame, the card becomes the header: each line travels to that slot and shrinks
-	   onto it, and the deltas arrive as --dx/--dy/--ds. The band itself stays in the flow.
-	   Reclaiming its height here — a negative margin the height of the card — is what moved
-	   every photograph below it, because the space being given back is above the fold and
-	   cannot be reclaimed without moving what is under it. */
 	.card--out {
 		overflow: visible;
 	}
@@ -262,16 +237,11 @@
 	.card--out .card__index,
 	.card--out .card__name,
 	.card--out .card__meta {
-		/* Over the header's own panel, which is otherwise where the flight ends up. */
 		position: relative;
 		z-index: 6;
-		/* Centre, so the ghost arrives with its baseline on the slot's — see the ratio the
-		   script writes into --ds. */
 		transform-origin: left center;
 		transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0) scale(var(--ds, 1));
 		opacity: 0;
-		/* The fade waits for the flight. Letting it run first is what made this read as the
-		   card vanishing rather than arriving on the header. */
 		transition:
 			transform 0.55s cubic-bezier(0.16, 0.84, 0.28, 1),
 			opacity 0.28s ease 0.32s;
@@ -285,8 +255,6 @@
 			opacity 0.3s ease;
 	}
 
-	/* The hidden state lives inside the keyframes, so a bundle that never runs leaves the
-	   card visible rather than blank. */
 	@keyframes card-in {
 		from {
 			opacity: 0;
@@ -315,8 +283,6 @@
 
 	.set__head {
 		position: sticky;
-		/* Above the WebGL canvas, so a sticky set label is never drawn over by a
-		   photograph passing underneath it. */
 		z-index: 5;
 		top: var(--header-h);
 		display: flex;
@@ -333,17 +299,10 @@
 			box-shadow 0.4s ease;
 	}
 
-	/* While the card is in frame it *is* the header, so the header waits — and shows itself
-	   the moment the card starts handing over. Only ever hidden once the sentinel is being
-	   watched, so a visitor whose scripts never run still sees a set label. */
 	.set__head--waiting {
 		opacity: 0;
 	}
 
-	/* Pinned, the header firms up, so a set label that stops moving still reads as attached to
-	   the photographs passing under it. The pinned state must not change the box: the pin
-	   happens while somebody is reading the grid below it, and a panel 8px taller for being
-	   pinned moves every plate under it at the same instant. */
 	.set__head--pinned {
 		background: color-mix(in srgb, var(--bg) 94%, transparent);
 		box-shadow: 0 1px 0 var(--line);

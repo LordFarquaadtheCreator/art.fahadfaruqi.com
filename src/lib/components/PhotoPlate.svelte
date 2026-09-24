@@ -79,16 +79,19 @@
 	const portrait = $derived(ratio !== null && ratio < 1);
 </script>
 
-<figure class="plate" class:plate--portrait={portrait} use:dwellWhileVisible>
+<figure
+	class="plate"
+	class:plate--portrait={portrait}
+	style="--ratio: {ratio ?? 1.5}"
+	use:dwellWhileVisible
+>
 	<div class="plate__media" class:plate__media--focused={focused}>
 		<button
 			class="plate__frame"
 			class:plate__frame--loaded={loaded}
 			type="button"
 			use:registerPlate
-			style={ratio
-				? `aspect-ratio: ${ratio}; --ratio: ${ratio}`
-				: `--ratio: ${3 / 2}`}
+			style={ratio ? `aspect-ratio: ${ratio}` : null}
 			onclick={() => {
 				disarm();
 				onOpen(photo);
@@ -150,6 +153,7 @@
 <style>
 	.plate {
 		margin: 0;
+		max-width: min(100%, calc(var(--ratio, 1.5) * 74vh));
 	}
 
 	.plate__media {
@@ -163,12 +167,6 @@
 		aspect-ratio: 3 / 2;
 		overflow: hidden;
 		background: var(--bg-elev);
-	}
-
-	@media (max-width: 1023px) {
-		.plate__media {
-			max-width: min(100%, calc(var(--ratio, 1.5) * 74vh));
-		}
 	}
 
 	.plate__lqip,
@@ -272,7 +270,7 @@
 	}
 
 	.plate__number {
-		font-size: 0.6875rem;
+		font-size: var(--label-size);
 		color: var(--faint);
 		transition: color 0.3s ease;
 	}
@@ -290,7 +288,7 @@
 
 	.plate__exif {
 		grid-column: 2;
-		font-size: 0.6875rem;
+		font-size: var(--label-size);
 		text-transform: uppercase;
 		letter-spacing: 0.02em;
 		color: var(--faint);

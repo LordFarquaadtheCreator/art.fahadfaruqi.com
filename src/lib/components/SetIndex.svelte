@@ -43,6 +43,11 @@
 </div>
 
 <style>
+	.filters {
+		border-bottom: 1px solid var(--line);
+		scroll-margin-top: calc(var(--header-h) + 0.5rem);
+	}
+
 	.index {
 		display: flex;
 		flex-wrap: wrap;
@@ -50,7 +55,7 @@
 	}
 
 	.index__count {
-		font-size: 0.625rem;
+		font-size: 0.9em;
 		color: var(--faint);
 		transition: color 0.25s ease;
 	}

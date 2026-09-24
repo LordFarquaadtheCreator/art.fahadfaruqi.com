@@ -35,7 +35,7 @@
 	.footer {
 		position: relative;
 		z-index: 1;
-		padding-block: clamp(2rem, 6vh, 4rem);
+		padding-block: var(--footer-pad-block);
 		border-top: 1px solid var(--line);
 		transition:
 			opacity 0.9s ease,
@@ -50,7 +50,7 @@
 	.footer__row {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem 2rem;
+		gap: 0.5rem var(--footer-gap);
 		justify-content: space-evenly;
 	}
 
@@ -63,5 +63,16 @@
 
 	.footer__span .label {
 		min-width: 12ch;
+		overflow-wrap: anywhere;
+	}
+
+	@media (max-width: 800px) {
+		.footer__row {
+			flex-direction: column;
+		}
+
+		.footer__span {
+			flex: 0 1 auto;
+		}
 	}
 </style>

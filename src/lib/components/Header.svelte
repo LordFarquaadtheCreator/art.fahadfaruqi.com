@@ -62,16 +62,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1.5rem;
-		padding-block: 0.85rem;
+		gap: var(--header-gap);
+		padding-block: var(--header-pad-block);
 		transition: padding 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
 	}
 
 	.header--scrolled .header__inner {
-		padding-block: 0.6rem;
+		padding-block: var(--header-pad-scrolled);
 	}
 
-	/* One hairline of how far through the document you are. */
 	.header__progress {
 		position: absolute;
 		left: 0;
@@ -111,10 +110,8 @@
 	}
 
 
-	/* -------------------------------------------------------------- the sections */
-
 	.tabs {
 		display: flex;
-		gap: 1.75rem;
+		gap: var(--tabs-gap);
 	}
 </style>
