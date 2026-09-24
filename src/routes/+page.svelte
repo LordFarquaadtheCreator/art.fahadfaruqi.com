@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import GalleryGrid from '$lib/components/GalleryGrid.svelte';
+	import Hero from '$lib/components/Hero.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import SetIndex from '$lib/components/SetIndex.svelte';
-	import SplitText from '$lib/components/SplitText.svelte';
-	import { count } from '$lib/actions/count';
 	import { groupBySet } from '$lib/utils/group-images';
 	import { fetchPhotos, type Photo } from '$lib/utils/metadata';
 
@@ -84,27 +83,7 @@
 	/>
 </svelte:head>
 
-<!-- Hero -->
-<section class="hero">
-	<h1 class="title large" aria-label="Fahad Faruqi">
-		<SplitText text="Fahad Faruqi" />
-	</h1>
-
-	<div class="hairline hero__meta">
-		<p class="label fade-in-animation">Photography</p>
-		<p class="label fade-in-animation">Nikon D3300</p>
-		<p class="label fade-in-animation">Queens, New York</p>
-		<p class="label fade-in-animation">
-			{#if status === 'ready'}
-				<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
-			{:else if status === 'loading'}
-				Loading photos
-			{:else}
-				Photos unavailable
-			{/if}
-		</p>
-	</div>
-</section>
+<Hero {status} photoCount={photos.length} setCount={sets.length} />
 
 <!-- Error State -->
 {#if status === 'error'}
@@ -150,20 +129,6 @@
 />
 
 <style>
-	.hero {
-		padding-block: clamp(3rem, 12vh, 9rem) clamp(1rem, 3vh, 3rem);
-	}
-
-	.hero__meta {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-		gap: 0.5rem 1.5rem;
-	}
-
-	.hero__meta p {
-		margin: 0;
-	}
-
 	.state {
 		padding-block: var(--block);
 	}
