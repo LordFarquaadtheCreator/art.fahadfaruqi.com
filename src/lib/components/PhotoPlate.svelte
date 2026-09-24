@@ -141,9 +141,9 @@
 	</div>
 
 	<figcaption class="plate__caption">
-		<span class="plate__number num">{String(photo.number).padStart(2, '0')}</span>
+		<span class="plate__number">{String(photo.number).padStart(2, '0')}</span>
 		<span class="plate__title">{photo.title}</span>
-		<span class="plate__exif num">{caption}</span>
+		<span class="plate__exif">{caption}</span>
 	</figcaption>
 </figure>
 
