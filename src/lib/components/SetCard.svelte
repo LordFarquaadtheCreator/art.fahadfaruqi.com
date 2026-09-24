@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import type { Photo } from '$lib/utils/metadata';
 	import type { PhotoSet } from '$lib/utils/group-images';
 
@@ -64,15 +63,17 @@
 
 	/**
 	 * Where the card's lines have to travel to sit on the header's own, and the aim that
-	 * keeps them pointed there while they travel. The card's height is recorded first,
-	 * because it is what the band closes by.
+	 * keeps them pointed there while they travel.
 	 */
 
 	/**
 	 * Where a line sits in the page, in layout terms. Read from `offsetTop`/`offsetHeight`
 	 * and the offset parent's box rather than from the line's own rect, because that rect
-	 * carries the flight's transform: a second hand-off (the closing band re-crosses the
-	 * sentinel) would otherwise fold the previous flight into the next one's measurement.
+	 * carries the flight's transform: a return to the top of the page and back down would
+	 * otherwise fold the previous flight into the next one's measurement.
+	 *
+	 * The centre is the edge the flight aligns on, not the bottom — `onPinned` has the
+	 * reason.
 	 */
 	function anchor(node: HTMLElement, card: HTMLElement) {
 		const parent = (node.offsetParent as HTMLElement | null) ?? card;
@@ -80,17 +81,16 @@
 
 		return {
 			left: box.left + node.offsetLeft,
-			bottom: box.top + node.offsetTop + node.offsetHeight
+			centre: box.top + node.offsetTop + node.offsetHeight / 2
 		};
 	}
 
-	// The flight's own aim loop. The header keeps moving until it pins, and the band closes
-	// underneath while the lines travel, so a landing measured once is only correct at the
-	// instant it was measured: stop mid-flight and the lines land on the slot the header
-	// would have reached, which is not where it is. Both ends are read live instead, from
-	// layout geometry that no transform can distort. The window outlasts the collapse's
-	// 0.5s delay plus the transition, so the last frame is aimed at a settled header;
-	// re-writing an unchanged value starts no new transition.
+	// The flight's own aim loop. The header keeps moving until it pins, so a landing measured
+	// once is only correct at the instant it was measured: stop mid-flight and the lines land
+	// on the slot the header would have reached, which is not where it is. Both ends are read
+	// live instead, from layout geometry that no transform can distort. The window outlasts
+	// the transition itself, so the last frame is aimed at a settled header; re-writing an
+	// unchanged value starts no new transition.
 	let aim = 0;
 
 	function stopAim() {
@@ -102,8 +102,8 @@
 		const until = performance.now() + 1500;
 		const legs = pairs.map((pair) => ({
 			...pair,
-			from: { left: 0, bottom: 0 },
-			to: pair.target.getBoundingClientRect()
+			from: { left: 0, centre: 0 },
+			to: { left: 0, centre: 0 }
 		}));
 
 		const step = () => {
@@ -111,12 +111,13 @@
 			// layout per leg, and this runs for 1.5s of frames.
 			for (const leg of legs) {
 				leg.from = anchor(leg.node, card);
-				leg.to = leg.target.getBoundingClientRect();
+				const slot = leg.target.getBoundingClientRect();
+				leg.to = { left: slot.left, centre: slot.top + slot.height / 2 };
 			}
 
 			for (const leg of legs) {
 				leg.node.style.setProperty('--dx', `${leg.to.left - leg.from.left}px`);
-				leg.node.style.setProperty('--dy', `${leg.to.bottom - leg.from.bottom}px`);
+				leg.node.style.setProperty('--dy', `${leg.to.centre - leg.from.centre}px`);
 			}
 
 			aim = performance.now() < until ? requestAnimationFrame(step) : 0;
@@ -127,7 +128,7 @@
 
 	$effect(() => () => stopAim());
 
-	async function onPinned(value: boolean) {
+	function onPinned(value: boolean) {
 		stopAim();
 
 		if (!value) {
@@ -135,16 +136,7 @@
 			return;
 		}
 
-		if (card) card.style.setProperty('--h', `${card.offsetHeight}px`);
-
 		pinned = true;
-		await tick();
-
-		// The header tightens into its pinned padding as the class lands, and measuring a
-		// moving box bakes that drift into the landing. Hold its transition for the read.
-		const head = headName?.closest('.set__head') as HTMLElement | null;
-		const held = head?.style.transition ?? '';
-		if (head) head.style.transition = 'none';
 
 		const legs: { node: HTMLElement; target: HTMLElement }[] = [];
 
@@ -155,18 +147,22 @@
 			const to = target.getBoundingClientRect();
 			if (!to.height) return;
 
-			// The scale is the one value a transform cannot corrupt on either side: the
-			// source's height is its layout height and the target's is untransformed.
-			node.style.setProperty('--ds', `${to.height / node.offsetHeight}`);
+			// The scale is the two type sizes, not the two boxes: a line set at 96px landing on a
+			// slot set at 44px has to arrive at 44px, and the boxes only agree by accident —
+			// their line heights come from different rules. Scaling about the line's centre lands
+			// the baselines too, exactly, while both lines are set in the same face: the
+			// half-leading cancels and only the line heights differ.
+			node.style.setProperty('--ds', `${size(target) / size(node)}`);
 			legs.push({ node, target });
 		});
-
-		if (head) head.style.transition = held;
 
 		if (card && legs.length) keepAim(legs, card);
 	}
 
 	const pad = (value: number) => String(value).padStart(2, '0');
+
+	// The size a line is actually set at, whatever its clamp resolved to.
+	const size = (node: HTMLElement) => parseFloat(getComputedStyle(node).fontSize);
 
 	// The most recent capture date in the set, from the listing's own timestamps.
 	const latest = (photos: Photo[]) =>
@@ -183,7 +179,7 @@
 >
 	<div class="card__inner fade-in-animation">
 		<span class="label num card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
-		<h3 class="title medium" bind:this={cardName}>{set.name}</h3>
+		<h3 class="card__name title medium" bind:this={cardName}>{set.name}</h3>
 		<span class="label num card__meta" bind:this={cardCount}>
 			{set.photos.length} photos &middot; {latest(set.photos)}
 		</span>
@@ -210,9 +206,6 @@
 		min-height: clamp(8rem, 24vh, 15rem);
 		padding-block: clamp(1.5rem, 6vh, 4rem) clamp(1rem, 3vh, 2rem);
 		overflow: hidden;
-		/* Opening the band back up is not delayed: the lines come home into a box that is
-		   already the right size. Closing it is, so they travel first. */
-		transition: margin-bottom 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
 	}
 
 	.card__inner {
@@ -258,13 +251,12 @@
 	}
 
 	/* Out of frame, the card becomes the header: each line travels to that slot and shrinks
-	   onto it, and the band closes behind them. The deltas arrive as --dx/--dy/--ds. The
-	   box stays put while they travel, which is what keeps the landing exact — the space
-	   itself closes afterwards, by the margin the card is no longer using. */
+	   onto it, and the deltas arrive as --dx/--dy/--ds. The band itself stays in the flow.
+	   Reclaiming its height here — a negative margin the height of the card — is what moved
+	   every photograph below it, because the space being given back is above the fold and
+	   cannot be reclaimed without moving what is under it. */
 	.card--out {
 		overflow: visible;
-		margin-bottom: calc(-1 * var(--h, 0px));
-		transition-delay: 0.5s;
 	}
 
 	.card--out .card__index,
@@ -273,7 +265,9 @@
 		/* Over the header's own panel, which is otherwise where the flight ends up. */
 		position: relative;
 		z-index: 6;
-		transform-origin: left bottom;
+		/* Centre, so the ghost arrives with its baseline on the slot's — see the ratio the
+		   script writes into --ds. */
+		transform-origin: left center;
 		transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0) scale(var(--ds, 1));
 		opacity: 0;
 		/* The fade waits for the flight. Letting it run first is what made this read as the
@@ -336,7 +330,6 @@
 		transition:
 			opacity 0.35s ease,
 			background-color 0.4s ease,
-			padding 0.4s cubic-bezier(0.16, 0.84, 0.28, 1),
 			box-shadow 0.4s ease;
 	}
 
@@ -347,11 +340,12 @@
 		opacity: 0;
 	}
 
-	/* Pinned, the header tightens and firms up, so a set label that stops moving still
-	   reads as attached to the photographs passing under it. */
+	/* Pinned, the header firms up, so a set label that stops moving still reads as attached to
+	   the photographs passing under it. The pinned state must not change the box: the pin
+	   happens while somebody is reading the grid below it, and a panel 8px taller for being
+	   pinned moves every plate under it at the same instant. */
 	.set__head--pinned {
 		background: color-mix(in srgb, var(--bg) 94%, transparent);
-		padding-block: 0.5rem;
 		box-shadow: 0 1px 0 var(--line);
 	}
 </style>
