@@ -52,9 +52,9 @@
 
 		const root = document.documentElement;
 		const gap = parseFloat(getComputedStyle(root).fontSize) || 16;
-		const masthead = parseFloat(getComputedStyle(root).getPropertyValue('--masthead-h')) || 3;
+		const header = parseFloat(getComputedStyle(root).getPropertyValue('--header-h')) || 3;
 
-		// How far above the masthead line the hand-off starts, in root-em. The card's content
+		// How far above the header line the hand-off starts, in root-em. The card's content
 		// sits above its own bottom edge — the band's bottom padding — so waiting for the
 		// sentinel to clear the line means the lines are already above the top of the frame
 		// and the entire flight happens off-screen. The lead pulls it forward to where the
@@ -62,7 +62,7 @@
 		const LEAD = 3.5;
 
 		const observer = new IntersectionObserver(([entry]) => notify(!entry.isIntersecting), {
-			rootMargin: `-${(masthead + LEAD) * gap}px 0px 0px 0px`
+			rootMargin: `-${(header + LEAD) * gap}px 0px 0px 0px`
 		});
 
 		observer.observe(node);
@@ -344,7 +344,7 @@
 		/* Above the WebGL canvas, so a sticky set label is never drawn over by a
 		   photograph passing underneath it. */
 		z-index: 5;
-		top: var(--masthead-h);
+		top: var(--header-h);
 		display: flex;
 		align-items: baseline;
 		gap: 1rem;

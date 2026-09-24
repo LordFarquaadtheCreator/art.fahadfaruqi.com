@@ -1,13 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Atmosphere from '$lib/components/Atmosphere.svelte';
 	import GalleryGrid from '$lib/components/GalleryGrid.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import SetIndex from '$lib/components/SetIndex.svelte';
 	import SplitText from '$lib/components/SplitText.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { count } from '$lib/actions/count';
-	import { reveal } from '$lib/actions/reveal';
 	import { groupBySet } from '$lib/utils/group-images';
 	import { fetchPhotos, type Photo } from '$lib/utils/metadata';
 
@@ -18,7 +15,6 @@
 	let activeSet = $state('all');
 	let viewerOpen = $state(false);
 	let viewerIndex = $state(0);
-	let copied = $state(false);
 
 	const sets = $derived(groupBySet(photos));
 	const visibleSets = $derived(
@@ -52,30 +48,6 @@
 	}
 
 	let pass = $state(0);
-	let scrolled = $state(false);
-	let progress = $state(0);
-
-	// The masthead's scroll state, as component state rather than an attribute an action
-	// sets: Svelte can see a bound class, so it keeps the rules and scopes them. The read
-	// is a plain pair of numbers (neither forces layout while scrolling), and Svelte
-	// batches the updates, so this stays cheaper than deferring to a frame.
-	$effect(() => {
-		const read = () => {
-			const y = window.scrollY;
-			const span = document.documentElement.scrollHeight - window.innerHeight;
-			scrolled = y > 24;
-			progress = span > 0 ? Math.min(1, y / span) : 0;
-		};
-
-		read();
-		window.addEventListener('scroll', read, { passive: true });
-		window.addEventListener('resize', read, { passive: true });
-
-		return () => {
-			window.removeEventListener('scroll', read);
-			window.removeEventListener('resize', read);
-		};
-	});
 
 	const reducedMotion = () =>
 		typeof window !== 'undefined' &&
@@ -90,19 +62,18 @@
 		activeSet = slug;
 		pass += 1;
 
-		const gallery = document.querySelector('.gallery');
-		if (!gallery) return;
+		const filters = document.querySelector('.filters');
+		if (!filters) return;
 
-		// Only travel when the gallery is still below the fold, so filtering from the
-		// masthead while reading the grid does not yank the page out from under you.
-		if (gallery.getBoundingClientRect().top > window.innerHeight * 0.5) {
-			gallery.scrollIntoView({
+		// Only travel when the filter is still below the fold, so re-filtering while
+		// reading the grid does not yank the page out from under you.
+		if (filters.getBoundingClientRect().top > window.innerHeight * 0.5) {
+			filters.scrollIntoView({
 				behavior: reducedMotion() ? 'auto' : 'smooth',
 				block: 'start'
 			});
 		}
 	}
-
 </script>
 
 <svelte:head>
@@ -113,110 +84,63 @@
 	/>
 </svelte:head>
 
-<!-- Banner -->
-<header class="masthead" class:masthead--scrolled={scrolled}>
-	<div class="masthead__inner shell">
-		<a class="masthead__mark" href="#top">Fahad Faruqi</a>
-		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
-		<ThemeToggle />
+<!-- Hero -->
+<section class="hero shell">
+	<h1 class="hero__name" aria-label="Fahad Faruqi">
+		<SplitText text="Fahad Faruqi" />
+	</h1>
+
+	<div class="hero__meta">
+		<p class="label">Photography</p>
+		<p class="label">Nikon D3300</p>
+		<p class="label">Queens, New York</p>
+		<p class="label num">
+			{#if status === 'ready'}
+				<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
+			{:else if status === 'loading'}
+				Loading photos
+			{:else}
+				Photos unavailable
+			{/if}
+		</p>
 	</div>
-	<span class="masthead__progress" aria-hidden="true" style="--progress: {progress}"></span>
-</header>
+</section>
 
-<main id="top">
-	<!-- Hero -->
-	<section class="hero shell">
-		<h1 class="hero__name" aria-label="Fahad Faruqi">
-			<SplitText text="Fahad Faruqi" />
-		</h1>
+<!-- Error State -->
+{#if status === 'error'}
+	<section class="state shell">
+		<p class="state__title">The index could not be loaded.</p>
+		<p class="state__detail num">{failure}</p>
+		<button class="state__retry label" type="button" onclick={() => load()}>Retry</button>
+	</section>
+{/if}
 
-		<div class="hero__meta">
-			<p class="label">Photography</p>
-			<p class="label">Nikon D3300</p>
-			<p class="label">Queens, New York</p>
-			<p class="label num">
-				{#if status === 'ready'}
-					<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
-				{:else if status === 'loading'}
-					Loading index
-				{:else}
-					Index unavailable
-				{/if}
+<!-- Loading State -->
+{#if status === 'loading'}
+	<section class="loading" role="status" aria-live="polite">
+		<span class="loading__hairline" aria-hidden="true"></span>
+		<div class="loading__inner shell">
+			<p class="label num loading__readout">
+				Receiving index<span class="loading__dot" aria-hidden="true"></span>
 			</p>
+			<p class="label num loading__source">assets.fahadfaruqi.com</p>
+		</div>
+		<div class="loading__frames shell" aria-hidden="true">
+			{#each [0, 1, 2, 3] as frame (frame)}
+				<span class="loading__frame" style="--i: {frame}"></span>
+			{/each}
 		</div>
 	</section>
+{/if}
 
-	<!-- Error State -->
-	{#if status === 'error'}
-		<section class="state shell">
-			<p class="state__title">The index could not be loaded.</p>
-			<p class="state__detail num">{failure}</p>
-			<button class="state__retry label" type="button" onclick={() => load()}>Retry</button>
-		</section>
-	{/if}
-
-	<!-- Loading State -->
-	{#if status === 'loading'}
-		<section class="loading" role="status" aria-live="polite">
-			<span class="loading__hairline" aria-hidden="true"></span>
-			<div class="loading__inner shell">
-				<p class="label num loading__readout">
-					Receiving index<span class="loading__dot" aria-hidden="true"></span>
-				</p>
-				<p class="label num loading__source">assets.fahadfaruqi.com</p>
-			</div>
-			<div class="loading__frames shell" aria-hidden="true">
-				{#each [0, 1, 2, 3] as frame (frame)}
-					<span class="loading__frame" style="--i: {frame}"></span>
-				{/each}
-			</div>
-		</section>
-	{/if}
-
-	<!-- Images -->
-	{#if status === 'ready' && visibleSets.length > 0}
-		<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
-	{/if}
-</main>
-
-<!-- Footer -->
-<footer class="footer shell" use:reveal>
-	<div class="footer__row">
-		<div class="footer__span">
-			<span class="label">All photographs by Fahad Faruqi.</span>
-		</div>
-		<div class="footer__span">
-			<span class="label">Human Made.</span>
-		</div>
-		<div class="footer__span">
-			<button
-				class="label"
-				type="button"
-				aria-pressed={copied}
-				onclick={async () => {
-					await navigator.clipboard.writeText('fahadfaruqi1@gmail.com');
-					copied = true;
-					setTimeout(() => {
-						copied = false;
-					}, 1000);
-				}}
-			>
-				{!copied ? 'fahadfaruqi1@gmail.com' : 'Copied.'}
-			</button>
-		</div>
+<!-- Images -->
+{#if status === 'ready' && visibleSets.length > 0}
+	<div class="filters shell">
+		<SetIndex sets={sets} active={activeSet} total={photos.length} onSelect={setFilter} />
 	</div>
-</footer>
 
-<!-- To Top Button -->
-<button
-	class="to-top label"
-	class:to-top--visible={progress > 0.08}
-	type="button"
-	tabindex={progress > 0.08 ? 0 : -1}
-	onclick={() => window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' })}
->
-	Top <span class="to-top__arrow" aria-hidden="true">↑</span>
-</button>
+	<GalleryGrid sets={visibleSets} {pass} onOpen={openViewer} />
+{/if}
 
 <!-- Individual Photo Lightbox -->
 <Lightbox
@@ -227,118 +151,7 @@
 	onNavigate={(next) => (viewerIndex = next)}
 />
 
-<Atmosphere />
-
 <style>
-	.masthead {
-		position: sticky;
-		top: 0;
-		z-index: 20;
-		background: color-mix(in srgb, var(--bg) 86%, transparent);
-		backdrop-filter: blur(10px);
-		border-bottom: 1px solid var(--line);
-		transition:
-			background-color 0.45s ease,
-			border-color 0.45s ease,
-			backdrop-filter 0.45s ease;
-	}
-
-	/* Scrolled, the bar sinks a little: tighter, dimmer, and with a firmer rule, so
-	   the page reads as having moved rather than the bar just sticking. */
-	.masthead--scrolled {
-		background: color-mix(in srgb, var(--bg) 72%, transparent);
-		backdrop-filter: blur(18px);
-		border-bottom-color: var(--line-2);
-	}
-
-	/* The glow lives in a fixed layer behind the page, so the page itself has to be
-	   lifted above it for text and photographs to sit on the light, not under it. */
-	main,
-	.footer {
-		position: relative;
-		z-index: 1;
-	}
-
-	.masthead__inner {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		padding-block: 0.85rem;
-		transition: padding 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.masthead--scrolled .masthead__inner {
-		padding-block: 0.6rem;
-	}
-
-	/* One hairline of how far through the document you are. */
-	.masthead__progress {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 1px;
-		background: var(--accent);
-		transform: scaleX(var(--progress, 0));
-		transform-origin: left center;
-	}
-
-	.masthead__inner > * {
-		animation: masthead-in 0.7s cubic-bezier(0.16, 0.84, 0.28, 1) both;
-	}
-
-	.masthead__inner > :nth-child(1) {
-		animation-delay: 0.04s;
-	}
-
-	.masthead__inner > :nth-child(2) {
-		animation-delay: 0.11s;
-	}
-
-	.masthead__inner > :nth-child(3) {
-		animation-delay: 0.18s;
-	}
-
-	@keyframes masthead-in {
-		from {
-			opacity: 0;
-			transform: translate3d(0, -0.5rem, 0);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
-	}
-
-	.masthead__mark {
-		position: relative;
-		font-size: 0.8125rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		white-space: nowrap;
-	}
-
-	/* The only link in the masthead draws its own underline on approach. */
-	.masthead__mark::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -0.15rem;
-		height: 1px;
-		background: var(--line-2);
-		transform: scaleX(0);
-		transform-origin: left center;
-		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.masthead__mark:hover::after,
-	.masthead__mark:focus-visible::after {
-		transform: scaleX(1);
-	}
-
 	.hero {
 		padding-block: clamp(3rem, 12vh, 9rem) clamp(4rem, 14vh, 11rem);
 	}
@@ -437,6 +250,10 @@
 		color: var(--fg);
 		border-bottom-color: var(--accent);
 		transform: translate3d(0, -1px, 0);
+	}
+
+	.state__retry:active {
+		transform: translate3d(0, 0, 0) scale(0.98);
 	}
 
 	/* ---------------------------------------------------------------- the wait */
@@ -554,85 +371,14 @@
 		}
 	}
 
-	.state__retry:active {
-		transform: translate3d(0, 0, 0) scale(0.98);
-	}
+	/* --------------------------------------------------------------- the filter */
 
-	.footer {
-		padding-block: clamp(2rem, 6vh, 4rem);
-		border-top: 1px solid var(--line);
-		transition:
-			opacity 0.9s ease,
-			transform 0.9s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	/* Set by the reveal action; see the note on .cell in GalleryGrid. */
-	:global(.footer[data-revealed='false']) {
-		opacity: 0;
-		transform: translate3d(0, 1rem, 0);
-	}
-
-	.footer__row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem 2rem;
-		justify-content: space-evenly;
-	}
-
-	.footer__span {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		justify-content: center;
-	}
-
-	.footer__span .label {
-		min-width: 12ch;
-	}
-
-	/* Off the top of the document, and only then. Hidden it is not focusable, so it
-	   never appears in the tab order as an invisible stop. */
-	.to-top {
-		position: fixed;
-		right: var(--gutter);
-		bottom: clamp(1rem, 3vh, 2rem);
-		z-index: 15;
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.35rem;
-		padding: 0.4rem 0.7rem;
-		border: 1px solid var(--line);
-		background: color-mix(in srgb, var(--bg) 80%, transparent);
-		backdrop-filter: blur(10px);
-		color: var(--muted);
-		opacity: 0;
-		transform: translate3d(0, 0.75rem, 0);
-		pointer-events: none;
-		transition:
-			opacity 0.4s ease,
-			transform 0.5s cubic-bezier(0.16, 0.84, 0.28, 1),
-			color 0.25s ease,
-			border-color 0.25s ease;
-	}
-
-	.to-top--visible {
-		opacity: 1;
-		transform: none;
-		pointer-events: auto;
-	}
-
-	.to-top:hover {
-		color: var(--fg);
-		border-color: var(--accent);
-	}
-
-	.to-top__arrow {
-		display: inline-block;
-		transition: transform 0.35s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.to-top:hover .to-top__arrow {
-		transform: translate3d(0, -0.2rem, 0);
+	/* Above the grid it filters, so the sets stay within reach of the photographs, and
+	   clear of the sticky bar when a filter change scrolls back up to it. */
+	.filters {
+		padding-block: 1.1rem;
+		border-bottom: 1px solid var(--line);
+		scroll-margin-top: calc(var(--header-h) + 0.5rem);
 	}
 
 	/* A band of type running under the hero, so the page announces itself once before
@@ -696,5 +442,4 @@
 			transform: translate3d(-50%, 0, 0);
 		}
 	}
-
 </style>

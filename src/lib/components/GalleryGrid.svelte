@@ -43,8 +43,8 @@
 <style>
 	.gallery {
 		padding-block: clamp(2rem, 6vh, 5rem) var(--block);
-		/* The masthead is sticky, so a scroll to the grid has to clear it. */
-		scroll-margin-top: calc(var(--masthead-h) + 0.5rem);
+		/* The header is sticky, so a scroll to the grid has to clear it. */
+		scroll-margin-top: calc(var(--header-h) + 0.5rem);
 	}
 
 	/* Filtering re-plays the incoming sets, one after another. The two names are
