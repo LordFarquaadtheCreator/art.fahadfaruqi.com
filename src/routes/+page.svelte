@@ -94,7 +94,7 @@
 		<p class="label fade-in-animation">Photography</p>
 		<p class="label fade-in-animation">Nikon D3300</p>
 		<p class="label fade-in-animation">Queens, New York</p>
-		<p class="label num fade-in-animation">
+		<p class="label fade-in-animation">
 			{#if status === 'ready'}
 				<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
 			{:else if status === 'loading'}

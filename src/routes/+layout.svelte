@@ -1,6 +1,7 @@
 <script lang="ts">
-	import '@fontsource-variable/inter';
-	import '@fontsource/ibm-plex-mono/400.css';
+	import '@fontsource/audiowide';
+	import '@fontsource/prosto-one';
+	import '@fontsource/sixtyfour';
 	import '../app.css';
 	import Atmosphere from '$lib/components/Atmosphere.svelte';
 	import Footer from '$lib/components/Footer.svelte';

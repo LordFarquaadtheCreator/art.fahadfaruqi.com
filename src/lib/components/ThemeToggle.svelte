@@ -3,7 +3,7 @@
 	import { CANVAS, type Theme } from '$lib/utils/theme';
 
 	let theme = $state<Theme>('dark');
-
+	
 	function paintAgentSurfaces(next: Theme) {
 		const root = document.documentElement;
 		root.dataset.theme = next;

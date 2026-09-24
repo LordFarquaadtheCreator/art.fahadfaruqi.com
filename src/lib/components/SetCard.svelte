@@ -178,9 +178,9 @@
 	bind:this={card}
 >
 	<div class="card__inner fade-in-animation">
-		<span class="label num card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
+		<span class="label  card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
 		<h3 class="card__name title medium" bind:this={cardName}>{set.name}</h3>
-		<span class="label num card__meta" bind:this={cardCount}>
+		<span class="label  card__meta" bind:this={cardCount}>
 			{set.photos.length} photos &middot; {latest(set.photos)}
 		</span>
 	</div>
@@ -193,9 +193,9 @@
 	class:set__head--pinned={pinned}
 	class:set__head--waiting={measuring && !pinned}
 >
-	<span class="label num" bind:this={headIndex}>{pad(index + 1)}</span>
+	<span class="label " bind:this={headIndex}>{pad(index + 1)}</span>
 	<h2 class="set__name" bind:this={headName}>{set.name}</h2>
-	<span class="label num" bind:this={headCount}>{set.photos.length} photographs</span>
+	<span class="label " bind:this={headCount}>{set.photos.length} photographs</span>
 </header>
 
 <style>

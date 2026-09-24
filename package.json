@@ -13,11 +13,14 @@
     "worker:deploy": "cd metadata-api && wrangler deploy"
   },
   "devDependencies": {
-    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/audiowide": "^5.3.0",
+    "@fontsource/prosto-one": "^5.3.0",
+    "@fontsource/sixtyfour": "^5.3.0",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.63.0",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/bun": "latest",
     "@types/three": "^0.186.0",
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
@@ -26,11 +29,9 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
-    "wrangler": "^4.97.0",
-    "@types/bun": "latest"
+    "wrangler": "^4.97.0"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@humanspeak/svelte-motion": "^1.2.1",
     "svelte-bricks": "^0.5.0",
     "svelte-lightbox": "^1.1.9",

@@ -166,7 +166,7 @@
 			{#key photo.key}
 				<div class="viewer__panel">
 					<div class="viewer__row" style="--i: 0">
-						<span class="label num viewer__count"
+						<span class="label  viewer__count"
 							>Plate {String(index + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span
 						>
 						<span class="label">{photo.set}</span>

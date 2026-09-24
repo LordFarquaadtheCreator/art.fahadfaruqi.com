@@ -1,9 +1,11 @@
 @import 'tailwindcss';
 
 @theme {
+	--font-display: 'Audiowide', ui-sans-serif, system-ui, sans-serif;
 	--font-sans:
-		'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-	--font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+		'Prosto One', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial,
+		sans-serif;
+	--font-mono: 'Sixtyfour', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root,
@@ -65,6 +67,18 @@ body {
 	transition:
 		background-color 0.4s ease,
 		color 0.4s ease;
+}
+
+/* The display face is claimed by element rather than by component, so a heading
+   anywhere on the site gets it without every component restating the family. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.title {
+	font-family: var(--font-display);
 }
 
 ::selection {
@@ -147,7 +161,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 }
 
 .label {
-	font-family: var(--font-mono);
+	font-family: var(--font-sans);
 	font-size: 0.6875rem;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
@@ -186,7 +200,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 .title {
 	margin: 0;
 	max-width: 34ch;
-	font-weight: 600;
+	font-weight: 400;
 	font-size: var(--lead);
 	letter-spacing: -0.05em;
 	text-transform: uppercase;
@@ -284,8 +298,8 @@ html[data-webgl='off'] .plate__frame .plate__image {
 		animation-delay: 0ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.001ms !important;
-		/* Delays are waits, so they go too: without this the morph's lines would still sit
-		   out 0.32s before fading and the band would still close 0.5s late. */
+		/* Delays are waits, so they go too: without this the card's lines would still sit out
+		   their 0.32s before fading, and the plates' reveals would still stagger. */
 		transition-delay: 0s !important;
 	}
 }
