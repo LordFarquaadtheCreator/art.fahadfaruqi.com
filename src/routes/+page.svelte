@@ -90,11 +90,11 @@
 		<SplitText text="Fahad Faruqi" />
 	</h1>
 
-	<div class="hero__meta">
-		<p class="label">Photography</p>
-		<p class="label">Nikon D3300</p>
-		<p class="label">Queens, New York</p>
-		<p class="label num">
+	<div class="hairline hero__meta">
+		<p class="label fade-in-animation">Photography</p>
+		<p class="label fade-in-animation">Nikon D3300</p>
+		<p class="label fade-in-animation">Queens, New York</p>
+		<p class="label num fade-in-animation">
 			{#if status === 'ready'}
 				<span use:count={photos.length}></span> photographs &middot; {sets.length} sets
 			{:else if status === 'loading'}
@@ -109,9 +109,9 @@
 <!-- Error State -->
 {#if status === 'error'}
 	<section class="state shell">
-		<p class="state__title">The index could not be loaded.</p>
-		<p class="state__detail num">{failure}</p>
-		<button class="state__retry label" type="button" onclick={() => load()}>Retry</button>
+		<p class="state__title fade-in-animation">The index could not be loaded.</p>
+		<p class="state__detail num fade-in-animation">{failure}</p>
+		<button class="state__retry label fade-in-animation" type="button" onclick={() => load()}>Retry</button>
 	</section>
 {/if}
 
@@ -160,62 +160,14 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 		gap: 0.5rem 1.5rem;
-		margin-top: clamp(2.5rem, 8vh, 6rem);
-		padding-top: 1rem;
-		border-top: 1px solid var(--line);
 	}
 
 	.hero__meta p {
 		margin: 0;
 	}
 
-	/* The strip catches up with the headline rather than appearing with it. */
-	.hero__meta > * {
-		animation: meta-in 0.8s cubic-bezier(0.16, 0.84, 0.28, 1) both;
-	}
-
-	.hero__meta > :nth-child(1) {
-		animation-delay: 0.24s;
-	}
-
-	.hero__meta > :nth-child(2) {
-		animation-delay: 0.32s;
-	}
-
-	.hero__meta > :nth-child(3) {
-		animation-delay: 0.4s;
-	}
-
-	.hero__meta > :nth-child(4) {
-		animation-delay: 0.48s;
-	}
-
-	@keyframes meta-in {
-		from {
-			opacity: 0;
-			transform: translate3d(0, 0.6rem, 0);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
-	}
-
 	.state {
 		padding-block: var(--block);
-	}
-
-	/* The error block arrives the same way everything else does. */
-	.state > * {
-		animation: meta-in 0.7s cubic-bezier(0.16, 0.84, 0.28, 1) both;
-	}
-
-	.state > :nth-child(2) {
-		animation-delay: 0.08s;
-	}
-
-	.state > :nth-child(3) {
-		animation-delay: 0.16s;
 	}
 
 	.state__title {

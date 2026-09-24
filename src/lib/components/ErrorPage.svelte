@@ -40,16 +40,18 @@
 
 <section class="error shell">
 	<p class="title-attention fade-in-animation">{status}</p>
-	<p class="title fade-in-animation">{copy.title}</p>
-	<p class="subtitle fade-in-animation">{copy.subtitle}</p>
-	<a
-		class="nav-button label error__back fade-in-animation"
-		href="/"
-		use:navLine
-	>
-		{copy.action}
-		<span aria-hidden="true">→</span>
-	</a>
+	<div class="hairline error__copy">
+		<p class="title fade-in-animation">{copy.title}</p>
+		<p class="subtitle fade-in-animation">{copy.subtitle}</p>
+		<a
+			class="nav-button label error__back fade-in-animation"
+			href="/"
+			use:navLine
+		>
+			{copy.action}
+			<span aria-hidden="true">→</span>
+		</a>
+	</div>
 </section>
 
 <style>
@@ -58,8 +60,13 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: clamp(1.25rem, 4vh, 2.5rem);
 		padding-block: clamp(2rem, 8vh, 6rem);
+	}
+
+	.error__copy {
+		display: flex;
+		flex-direction: column;
+		gap: clamp(1.25rem, 4vh, 2.5rem);
 	}
 
 	.error__back {

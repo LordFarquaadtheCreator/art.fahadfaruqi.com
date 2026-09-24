@@ -195,6 +195,11 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	text-transform: uppercase;
 }
 
+.hairline {
+	padding-top: 0.25rem;
+	border-top: 1px solid var(--line);
+}
+
 .nav-button {
 	position: relative;
 	display: inline-flex;
