@@ -18,10 +18,10 @@
 </svelte:head>
 
 <section class="error shell">
-	<p class="error__code">{status}</p>
-	<p class="error__title">{title}</p>
-	<p class="error__subtitle">{subtitle}</p>
-	<a class="error__back label" href="/">Back to the gallery <span aria-hidden="true">→</span></a>
+	<p class="error__code fade_in_animation">{status}</p>
+	<p class="error__title fade_in_animation">{title}</p>
+	<p class="error__subtitle fade_in_animation">{subtitle}</p>
+	<a class="error__back label fade_in_animation" href="/">Back to the gallery <span aria-hidden="true">→</span></a>
 </section>
 
 <style>
@@ -79,22 +79,5 @@
 	}
 	.error__back:hover span {
 		transform: translateX(0.3rem);
-	}
-	
-	/* animation staggered by position. */
-	.error > * {
-		animation: enter 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both;
-		animation-delay: calc((sibling-index() - 1) * 80ms);
-	}
-
-	@keyframes enter {
-		from {
-			opacity: 0;
-			transform: translate3d(0, 0.75rem, 0);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
 	}
 </style>

@@ -171,6 +171,30 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	letter-spacing: 0.04em;
 }
 
+/*
+ * Shared entrance. Any block that arrives with the page can wear this class instead of
+ * declaring its own copy: opacity and a short rise, staggered by position so a run of
+ * siblings assembles rather than appearing at once. The hidden state lives inside the
+ * keyframes' `from` frame, so a bundle that never runs leaves the block visible rather
+ * than blank. The stagger counts every element sibling, not only the ones wearing the
+ * class, so it is only exact when the whole run carries it.
+ */
+.fade_in_animation {
+	animation: fade_in_animation 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	animation-delay: calc((sibling-index() - 1) * 80ms);
+}
+
+@keyframes fade_in_animation {
+	from {
+		opacity: 0;
+		transform: translate3d(0, 0.75rem, 0);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
