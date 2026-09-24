@@ -110,32 +110,6 @@
 		}
 	}
 
-	.header__mark {
-		position: relative;
-		font-size: 0.8125rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		white-space: nowrap;
-	}
-
-	/* The mark draws its own underline on approach. */
-	.header__mark::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -0.15rem;
-		height: 1px;
-		background: var(--line-2);
-		transform: scaleX(0);
-		transform-origin: left center;
-		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.header__mark:hover::after,
-	.header__mark:focus-visible::after {
-		transform: scaleX(1);
-	}
 
 	/* -------------------------------------------------------------- the sections */
 
