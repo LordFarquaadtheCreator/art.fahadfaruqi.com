@@ -195,27 +195,53 @@ html[data-webgl='off'] .plate__frame .plate__image {
 }
 
 .nav-button {
-	padding-top: 0.75rem;
-	border-top: 1px solid var(--line);
+	position: relative;
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.4rem;
+	padding-block: 0.125rem;
 	color: var(--muted);
-	transition:
-		color 0.25s ease,
-		border-color 0.25s ease;
+	transition: color 0.25s ease;
 }
 
-.nav-button span {
-	display: inline-block;
-	transition: transform 0.25s ease;
+.nav-button::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -0.2rem;
+	height: 1px;
+	background: var(--line-2);
+	transform: scaleX(0);
+	transform-origin: var(--nav-from, left) center;
+	transition:
+		transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1),
+		background-color 0.25s ease;
 }
 
 .nav-button:hover,
-.nav-button:focus-visible {
+.nav-button:focus-visible,
+.nav-button[aria-current] {
 	color: var(--fg);
-	border-top-color: var(--accent);
 }
 
-.nav-button:hover span {
-	transform: translateX(0.3rem);
+.nav-button:hover::after,
+.nav-button:focus-visible::after,
+.nav-button[aria-current]::after {
+	transform: scaleX(1);
+}
+
+.nav-button[aria-current]::after {
+	background: var(--accent);
+}
+
+.nav-button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.nav-button:disabled::after {
+	transform: scaleX(0);
 }
 
 /* Animation */

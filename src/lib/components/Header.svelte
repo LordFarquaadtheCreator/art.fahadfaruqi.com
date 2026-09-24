@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { navLine } from '$lib/actions/nav-line';
 	import ThemeToggle from './ThemeToggle.svelte';
 
 	let { scrolled, progress }: { scrolled: boolean; progress: number } = $props();
@@ -20,10 +21,10 @@
 			{#each tabs as tab (tab.href)}
 				{@const active = current === tab.href}
 				<a
-					class="tabs__item label"
-					class:tabs__item--active={active}
+					class="nav-button label"
 					href={tab.href}
 					aria-current={active ? 'page' : undefined}
+					use:navLine
 				>
 					{tab.label}
 				</a>
@@ -141,37 +142,5 @@
 	.tabs {
 		display: flex;
 		gap: 1.75rem;
-	}
-
-	.tabs__item {
-		position: relative;
-		padding-block: 0.125rem;
-		color: var(--muted);
-		transition: color 0.25s ease;
-	}
-
-	.tabs__item::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -0.2rem;
-		height: 1px;
-		background: var(--accent);
-		transform: scaleX(0);
-		transform-origin: left center;
-		transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.tabs__item:hover {
-		color: var(--fg);
-	}
-
-	.tabs__item--active {
-		color: var(--fg);
-	}
-
-	.tabs__item--active::after {
-		transform: scaleX(1);
 	}
 </style>

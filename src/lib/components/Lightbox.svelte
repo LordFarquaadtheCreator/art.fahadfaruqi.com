@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { navLine } from '$lib/actions/nav-line';
 	import type { Photo } from '$lib/utils/metadata';
 	import MetadataDisplay from './MetadataDisplay.svelte';
 
@@ -186,26 +187,34 @@
 
 		<div class="viewer__controls">
 			<button
-				class="viewer__control label"
+				class="nav-button label viewer__control"
 				type="button"
 				onclick={previous}
 				disabled={!hasPrevious}
 				aria-label="Previous photograph"
+				use:navLine
 			>
 				<span class="viewer__arrow" aria-hidden="true">←</span>
 				<span class="viewer__word">Prev</span>
 			</button>
 			<button
-				class="viewer__control label"
+				class="nav-button label viewer__control"
 				type="button"
 				onclick={next}
 				disabled={!hasNext}
 				aria-label="Next photograph"
+				use:navLine
 			>
 				<span class="viewer__word">Next</span>
 				<span class="viewer__arrow" aria-hidden="true">→</span>
 			</button>
-			<button class="viewer__control label" type="button" onclick={onClose} aria-label="Close viewer">
+			<button
+				class="nav-button label viewer__control"
+				type="button"
+				onclick={onClose}
+				aria-label="Close viewer"
+				use:navLine
+			>
 				<span class="viewer__word">Close</span>
 				<span class="viewer__arrow" aria-hidden="true">✕</span>
 			</button>
@@ -421,18 +430,6 @@
 		gap: 1rem;
 	}
 
-	.viewer__control {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.4rem;
-		color: var(--muted);
-		transition: color 0.2s ease;
-	}
-
-	.viewer__control:hover:not(:disabled) {
-		color: var(--fg);
-	}
-
 	/* The arrow leans the way it is about to take you. */
 	.viewer__arrow {
 		display: inline-block;
@@ -445,11 +442,6 @@
 
 	.viewer__control:last-child:hover .viewer__arrow {
 		transform: translate3d(0.18rem, 0, 0) rotate(45deg);
-	}
-
-	.viewer__control:disabled {
-		opacity: 0.35;
-		cursor: default;
 	}
 
 	@media (max-width: 900px) {

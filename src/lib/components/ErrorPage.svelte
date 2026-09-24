@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { navLine } from '$lib/actions/nav-line';
+
 	interface Props {
 		status: number;
 		message: string | null;
@@ -21,7 +23,13 @@
 	<p class="title-attention fade-in-animation">{status}</p>
 	<p class="title fade-in-animation">{title}</p>
 	<p class="subtitle fade-in-animation">{subtitle}</p>
-	<a class="nav-button label error__back fade-in-animation" href="/">Back to the gallery <span aria-hidden="true">→</span></a>
+	<a
+		class="nav-button label error__back fade-in-animation"
+		href="/"
+		use:navLine
+	>
+		Back to the gallery <span aria-hidden="true">→</span>
+	</a>
 </section>
 
 <style>
@@ -33,10 +41,18 @@
 		gap: clamp(1.25rem, 4vh, 2.5rem);
 		padding-block: clamp(2rem, 8vh, 6rem);
 	}
-
-	/* The look lives in the shared .title-attention / .title / .subtitle / .nav-button; what
-	   is left here is where this page puts them. */
+	
 	.error__back {
 		align-self: flex-start;
+	}
+
+	.error__back span {
+		display: inline-block;
+		transition: transform 0.25s ease;
+	}
+
+	.error__back:hover span,
+	.error__back:focus-visible span {
+		transform: translateX(0.3rem);
 	}
 </style>

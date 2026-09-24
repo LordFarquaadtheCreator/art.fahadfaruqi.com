@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { count } from '$lib/actions/count';
+	import { navLine } from '$lib/actions/nav-line';
 	import type { PhotoSet } from '$lib/utils/group-images';
 
 	let {
@@ -13,54 +14,26 @@
 		total: number;
 		onSelect: (slug: string) => void;
 	} = $props();
-
-	let items = $state<HTMLButtonElement[]>([]);
-	// The underline is one element that travels, not a border that blinks on and off.
-	let mark = $state({ left: 0, width: 0 });
-
-	function measure() {
-		const index = active === 'all' ? 0 : sets.findIndex((set) => set.slug === active) + 1;
-		const node = items[index];
-		if (!node) {
-			mark = { left: 0, width: 0 };
-			return;
-		}
-		mark = { left: node.offsetLeft, width: node.offsetWidth };
-	}
-
-	$effect(() => {
-		// Re-measure when the selection changes and when the row rewraps.
-		active;
-		sets;
-		measure();
-		window.addEventListener('resize', measure);
-		return () => window.removeEventListener('resize', measure);
-	});
 </script>
 
 <nav class="index" aria-label="Filter by set">
-	<span class="index__mark" style="--left: {mark.left}px; --width: {mark.width}px" aria-hidden="true"
-	></span>
-
 	<button
-		class="index__item label"
-		class:index__item--active={active === 'all'}
+		class="nav-button label index__item"
 		type="button"
 		aria-current={active === 'all' ? 'true' : undefined}
-		bind:this={items[0]}
 		onclick={() => onSelect('all')}
+		use:navLine
 	>
 		All <span class="index__count num" use:count={total}></span>
 	</button>
 
-	{#each sets as set, index (set.slug)}
+	{#each sets as set (set.slug)}
 		<button
-			class="index__item label"
-			class:index__item--active={active === set.slug}
+			class="nav-button label index__item"
 			type="button"
 			aria-current={active === set.slug ? 'true' : undefined}
-			bind:this={items[index + 1]}
 			onclick={() => onSelect(set.slug)}
+			use:navLine
 		>
 			{set.name} <span class="index__count num" use:count={set.photos.length}></span>
 		</button>
@@ -69,41 +42,9 @@
 
 <style>
 	.index {
-		position: relative;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.25rem 1.25rem;
-	}
-
-	/* The active set's marker: amber, because amber is for what is live. The label
-	   itself stays --fg so the amber never has to carry text. */
-	.index__mark {
-		position: absolute;
-		bottom: 0;
-		height: 1px;
-		width: var(--width, 0);
-		background: var(--accent);
-		transform: translate3d(var(--left, 0), 0, 0);
-		transition:
-			transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1),
-			width 0.45s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.index__item {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.4rem;
-		padding-block: 0.125rem;
-		color: var(--muted);
-		transition: color 0.25s ease;
-	}
-
-	.index__item:hover {
-		color: var(--fg);
-	}
-
-	.index__item--active {
-		color: var(--fg);
 	}
 
 	.index__count {
@@ -112,7 +53,7 @@
 		transition: color 0.25s ease;
 	}
 
-	.index__item--active .index__count {
+	.index__item[aria-current] .index__count {
 		color: var(--accent);
 	}
 </style>
