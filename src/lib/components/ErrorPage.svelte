@@ -18,10 +18,10 @@
 </svelte:head>
 
 <section class="error shell">
-	<p class="error__code fade_in_animation">{status}</p>
-	<p class="error__title fade_in_animation">{title}</p>
-	<p class="error__subtitle fade_in_animation">{subtitle}</p>
-	<a class="error__back label fade_in_animation" href="/">Back to the gallery <span aria-hidden="true">→</span></a>
+	<p class="title-attention fade-in-animation">{status}</p>
+	<p class="title fade-in-animation">{title}</p>
+	<p class="subtitle fade-in-animation">{subtitle}</p>
+	<a class="nav-button label error__back fade-in-animation" href="/">Back to the gallery <span aria-hidden="true">→</span></a>
 </section>
 
 <style>
@@ -34,50 +34,9 @@
 		padding-block: clamp(2rem, 8vh, 6rem);
 	}
 
-	.error__code {
-		margin: 0;
-		font-size: clamp(4.5rem, 22vw, 18rem);
-		font-weight: 600;
-		line-height: 0.82;
-		letter-spacing: -0.05em;
-	}
-
-	.error__title {
-		margin: 0;
-		max-width: 34ch;
-		font-size: var(--lead);
-		letter-spacing: -0.02em;
-	}
-
-	.error__subtitle {
-		margin: 0;
-		max-width: 34ch;
-		font-size: clamp(0.875rem, 1.5vw, 1.125rem);
-		line-height: 1.5;
-		color: var(--muted);
-	}
-
+	/* The look lives in the shared .title-attention / .title / .subtitle / .nav-button; what
+	   is left here is where this page puts them. */
 	.error__back {
 		align-self: flex-start;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--line);
-		color: var(--muted);
-		transition:
-			color 0.25s ease,
-			border-color 0.25s ease;
-	}
-
-	.error__back span {
-		display: inline-block;
-		transition: transform 0.25s ease;
-	}
-
-	.error__back:hover,
-	.error__back:focus-visible {
-		color: var(--fg);
-		border-top-color: var(--accent);
-	}
-	.error__back:hover span {
-		transform: translateX(0.3rem);
 	}
 </style>
