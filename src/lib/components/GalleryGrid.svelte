@@ -20,7 +20,7 @@
 		<section class="set" id={set.slug} style="--set: {setIndex}">
 			<SetCard {set} index={setIndex} />
 
-			<div class="set__grid shell">
+			<div class="set__grid">
 				{#each set.photos as photo, index (photo.key)}
 					<div
 						class="cell cell--{index % 8}"

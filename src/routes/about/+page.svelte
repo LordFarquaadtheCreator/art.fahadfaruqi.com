@@ -3,7 +3,7 @@
 	<meta name="description" content="About Fahad Faruqi." />
 </svelte:head>
 
-<section class="about shell">
+<section class="about">
 	<h1 class="title large">About</h1>
 	<p class="hairline fade-in-animation label">Nothing written here yet.</p>
 </section>

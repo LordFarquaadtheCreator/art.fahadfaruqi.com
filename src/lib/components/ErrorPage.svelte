@@ -38,7 +38,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<section class="error shell">
+<section class="error">
 	<p class="title large fade-in-animation">{status}</p>
 	<div class="hairline error__copy">
 		<p class="title fade-in-animation">{copy.title}</p>

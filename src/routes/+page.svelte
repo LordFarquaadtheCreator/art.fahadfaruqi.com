@@ -85,7 +85,7 @@
 </svelte:head>
 
 <!-- Hero -->
-<section class="hero shell">
+<section class="hero">
 	<h1 class="title large" aria-label="Fahad Faruqi">
 		<SplitText text="Fahad Faruqi" />
 	</h1>
@@ -108,7 +108,7 @@
 
 <!-- Error State -->
 {#if status === 'error'}
-	<section class="state shell">
+	<section class="state">
 		<p class="state__title fade-in-animation">The index could not be loaded.</p>
 		<p class="state__detail num fade-in-animation">{failure}</p>
 		<button class="state__retry label fade-in-animation" type="button" onclick={() => load()}>Retry</button>
@@ -119,13 +119,13 @@
 {#if status === 'loading'}
 	<section class="loading" role="status" aria-live="polite">
 		<span class="loading__hairline" aria-hidden="true"></span>
-		<div class="loading__inner shell">
+		<div class="loading__inner">
 			<p class="label num loading__readout">
 				Receiving index<span class="loading__dot" aria-hidden="true"></span>
 			</p>
 			<p class="label num loading__source">assets.fahadfaruqi.com</p>
 		</div>
-		<div class="loading__frames shell" aria-hidden="true">
+		<div class="loading__frames" aria-hidden="true">
 			{#each [0, 1, 2, 3] as frame (frame)}
 				<span class="loading__frame" style="--i: {frame}"></span>
 			{/each}

@@ -181,11 +181,11 @@
 	use:onEnter={(value) => (entered = value)}
 	bind:this={card}
 >
-	<div class="card__inner shell">
+	<div class="card__inner fade-in-animation">
 		<span class="label num card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
 		<h3 class="title medium" bind:this={cardName}>{set.name}</h3>
 		<span class="label num card__meta" bind:this={cardCount}>
-			{set.photos.length} plates &middot; {latest(set.photos)}
+			{set.photos.length} photos &middot; {latest(set.photos)}
 		</span>
 	</div>
 	<span class="card__rule"></span>
@@ -193,7 +193,7 @@
 
 <span class="set__sentinel" aria-hidden="true" use:sticky={onPinned}></span>
 <header
-	class="set__head shell"
+	class="set__head"
 	class:set__head--pinned={pinned}
 	class:set__head--waiting={measuring && !pinned}
 >

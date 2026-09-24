@@ -16,7 +16,8 @@
 	} = $props();
 </script>
 
-<nav class="index" aria-label="Filter by set">
+<div class='filters'>
+    <nav class="index" aria-label="Filter by set">
 	<button
 		class="nav-button label index__item"
 		type="button"
@@ -38,7 +39,8 @@
 			{set.name} <span class="index__count num" use:count={set.photos.length}></span>
 		</button>
 	{/each}
-</nav>
+    </nav>
+</div>
 
 <style>
 	.index {
