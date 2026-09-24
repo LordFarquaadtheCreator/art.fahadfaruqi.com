@@ -15,7 +15,7 @@
 
 <header class="header" class:header--scrolled={scrolled}>
 	<div class="header__inner shell">
-		<a class="header__mark" href="/">Fahad Faruqi</a>
+		<a class="nav-button--small title-attention" href="/">Fahad Faruqi</a>
 
 		<nav class="tabs" aria-label="Sections">
 			{#each tabs as tab (tab.href)}

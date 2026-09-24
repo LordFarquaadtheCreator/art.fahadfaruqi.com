@@ -192,6 +192,7 @@ html[data-webgl='off'] .plate__frame .plate__image {
 	font-weight: 600;
 	line-height: 0.82;
 	letter-spacing: -0.05em;
+	text-transform: uppercase;
 }
 
 .nav-button {
@@ -242,6 +243,15 @@ html[data-webgl='off'] .plate__frame .plate__image {
 
 .nav-button:disabled::after {
 	transform: scaleX(0);
+}
+
+.nav-button--small {
+	font-size: 1rem !important;
+	gap: 0.25rem;
+}
+
+.nav-button--small::after {
+	bottom: -0.15rem;
 }
 
 /* Animation */
