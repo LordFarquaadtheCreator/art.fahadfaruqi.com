@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { cursor } from '$lib/utils/cursor.svelte';
 
-	// Noise plates — step-animated so the grain crawls and flickers like film
+	// Step-animated so the grain crawls and flickers like film
 	const coarseNoise =
 		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
 	const fineNoise =
@@ -11,7 +11,6 @@
 	let blobBase = $state<HTMLElement | null>(null);
 	let blobStretch = $state<HTMLElement | null>(null);
 	let blobBaseCore = $state<HTMLElement | null>(null);
-	let blobStretchCore = $state<HTMLElement | null>(null);
 	let carrier = $state<HTMLElement | null>(null);
 
 	// Mouse tracker onhover logic
@@ -31,12 +30,11 @@
 
 	// Light movement logic
 	$effect(() => {
-		if (!browser || !blobBase || !blobStretch || !blobBaseCore || !blobStretchCore) return;
+		if (!browser || !blobBase || !blobStretch || !blobBaseCore) return;
 
 		const nBlobBase = blobBase;
 		const nBlobStretch = blobStretch;
 		const nBlobBaseCore = blobBaseCore;
-		const nBlobStretchCore = blobStretchCore;
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const coarsePointer = window.matchMedia('(hover: none)').matches;
 
@@ -54,8 +52,8 @@
 			const parked = `translate3d(${window.innerWidth * 0.78}px, ${window.innerHeight * 0.82}px, 0)`;
 			nBlobBase.style.transform = parked;
 			nBlobStretch.style.transform = `${parked} scale(${(2 * radius) / frameSize})`;
-			nBlobStretchCore.style.opacity = '0';
-			nBlobBaseCore.style.opacity = '1';
+			nBlobStretch.style.setProperty('--blob-fade', '0');
+			nBlobBase.style.setProperty('--blob-fade', '1');
 			return () => window.removeEventListener('resize', measure);
 		}
 
@@ -118,10 +116,10 @@
 			nBlobStretch.style.transform =
 				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
 
-			// Opacity is the distance, and the base takes the inverse share, so the two cores sum to 1.
+			// Opacity is the distance, and the base takes the inverse share, so the two blobs sum to 1.
 			const fade = Math.min(Math.max((gap - radius) / radius, 0), 1);
-			nBlobStretchCore.style.opacity = String(fade);
-			nBlobBaseCore.style.opacity = String(1 - fade);
+			nBlobStretch.style.setProperty('--blob-fade', String(fade));
+			nBlobBase.style.setProperty('--blob-fade', String(1 - fade));
 
 			frame = requestAnimationFrame(tick);
 		}
@@ -142,10 +140,11 @@
 		<div class="blob-base__core" bind:this={blobBaseCore}></div>
 	</div>
 	<div class="blob-stretch" bind:this={blobStretch}>
-		<div class="blob-stretch__core" bind:this={blobStretchCore}></div>
+		<div class="blob-stretch__core"></div>
 	</div>
 	<div class="vignette vignette--dark"></div>
 	<div class="vignette vignette--light"></div>
+	<div class="mesh"></div>
 </div>
 
 <div class="overlay" aria-hidden="true">
@@ -164,6 +163,7 @@
 		position: fixed;
 		inset: 0;
 		z-index: 0;
+		background: var(--bg);
 		pointer-events: none;
 		overflow: hidden;
 	}
@@ -220,13 +220,14 @@
 		will-change: transform;
 	}
 
+	/* The base light: an organic blob, centred in its frame. Fill: --blob-base. */
 	.blob-base__core {
 		position: absolute;
 		inset: 0;
 		margin: auto;
-		filter: blur(44px);
 		width: 43.5%;
 		height: 39%;
+		filter: blur(44px);
 		border-radius: 47% 53% 41% 59% / 55% 44% 56% 45%;
 		background: radial-gradient(
 			closest-side,
@@ -234,8 +235,11 @@
 			color-mix(in srgb, var(--blob-base) 20%, transparent) 60%,
 			color-mix(in srgb, var(--blob-base) 10.5%, transparent) 100%
 		);
+		opacity: var(--blob-fade, 1);
 	}
 
+	/* The stretch: an ellipse filling its frame, which the loop scales to the computed span, so
+	   the fill and the blur stretch with it. Fill: --blob-stretch. */
 	.blob-stretch__core {
 		position: absolute;
 		inset: 0;
@@ -247,6 +251,22 @@
 			color-mix(in srgb, var(--blob-stretch) 20%, transparent) 60%,
 			color-mix(in srgb, var(--blob-stretch) 10.5%, transparent) 100%
 		);
+		opacity: var(--blob-fade, 1);
+	}
+
+	/* The lattice the light reveals. One fixed layer for the whole page — never scaled or moved
+	   with a blob, so the lines stay a property of the screen. It sits above the blobs and
+	   inverts what they do to the ground — multiply where the light screens, screen where it
+	   multiplies — so the lines cut into the glow and barely register on the empty ground. */
+	.mesh {
+		position: absolute;
+		inset: 0;
+		--mesh-cell: 28px;
+		background-image:
+			linear-gradient(to right, var(--mesh-ink) 0 1px, transparent 1px),
+			linear-gradient(to bottom, var(--mesh-ink) 0 1px, transparent 1px);
+		background-size: var(--mesh-cell) var(--mesh-cell);
+		mix-blend-mode: var(--mesh-blend);
 	}
 
 	.grain {

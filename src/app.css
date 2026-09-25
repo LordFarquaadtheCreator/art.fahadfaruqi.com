@@ -22,6 +22,8 @@
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
+	--mesh-ink: rgba(0, 0, 0, 0.22);
+	--mesh-blend: multiply;
 	--blob-base: #dc8d18;
 	--blob-stretch: #dc8d18;
 	--accent: #dc8d18;
@@ -42,6 +44,8 @@
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
+	--mesh-ink: rgba(255, 255, 255, 0.3);
+	--mesh-blend: screen;
 	--blob-base: #dc8d18;
 	--blob-stretch: #dc8d18;
 	--accent: #8a4a0a;
