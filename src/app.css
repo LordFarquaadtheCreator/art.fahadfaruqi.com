@@ -22,6 +22,8 @@
 	--grain-blend: overlay;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
+	--blob-base: #dc8d18;
+	--blob-stretch: #dc8d18;
 	--accent: #dc8d18;
 	--accent-line: rgba(220, 141, 24, 0.35);
 	--accent-on-fill: #0a0a0a;
@@ -40,6 +42,8 @@
 	--grain-blend: multiply;
 	--glow-opacity: 0.5;
 	--glow-blend: multiply;
+	--blob-base: #dc8d18;
+	--blob-stretch: #dc8d18;
 	--accent: #8a4a0a;
 	--accent-line: rgba(138, 74, 10, 0.35);
 	--accent-on-fill: #f2f1ed;

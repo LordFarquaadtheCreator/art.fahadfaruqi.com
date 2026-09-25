@@ -10,7 +10,8 @@
 
 	let blobBase = $state<HTMLElement | null>(null);
 	let blobStretch = $state<HTMLElement | null>(null);
-	let blobCore = $state<HTMLElement | null>(null);
+	let blobBaseCore = $state<HTMLElement | null>(null);
+	let blobStretchCore = $state<HTMLElement | null>(null);
 	let carrier = $state<HTMLElement | null>(null);
 
 	// Mouse tracker onhover logic
@@ -30,18 +31,19 @@
 
 	// Light movement logic
 	$effect(() => {
-		if (!browser || !blobBase || !blobStretch || !blobCore) return;
+		if (!browser || !blobBase || !blobStretch || !blobBaseCore || !blobStretchCore) return;
 
 		const nBlobBase = blobBase;
 		const nBlobStretch = blobStretch;
-		const nBlobCore = blobCore;
+		const nBlobBaseCore = blobBaseCore;
+		const nBlobStretchCore = blobStretchCore;
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const coarsePointer = window.matchMedia('(hover: none)').matches;
 
 		let radius = 0;
 		let frameSize = 1;
 		function measure() {
-			radius = (nBlobCore.offsetWidth + nBlobCore.offsetHeight) / 4;
+			radius = (nBlobBaseCore.offsetWidth + nBlobBaseCore.offsetHeight) / 4;
 			frameSize = nBlobStretch.offsetWidth;
 		}
 		measure();
@@ -52,9 +54,9 @@
 			const parked = `translate3d(${window.innerWidth * 0.78}px, ${window.innerHeight * 0.82}px, 0)`;
 			nBlobBase.style.transform = parked;
 			nBlobStretch.style.transform = `${parked} scale(${(2 * radius) / frameSize})`;
-			nBlobStretch.style.opacity = '0';
+			nBlobStretchCore.style.opacity = '0';
+			nBlobBaseCore.style.opacity = '1';
 			return () => window.removeEventListener('resize', measure);
-			return;
 		}
 
 		let targetX = window.innerWidth * 0.78;
@@ -111,8 +113,10 @@
 			nBlobStretch.style.transform =
 				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
 
+			// Opacity is the distance, and the base takes the inverse share, so the two cores sum to 1.
 			const fade = Math.min(Math.max((gap - radius) / radius, 0), 1);
-			nBlobStretch.style.opacity = `calc(var(--glow-opacity) * ${fade.toFixed(3)})`;
+			nBlobStretchCore.style.opacity = String(fade);
+			nBlobBaseCore.style.opacity = String(1 - fade);
 
 			frame = requestAnimationFrame(tick);
 		}
@@ -130,10 +134,10 @@
 
 <div class="backdrop" aria-hidden="true">
 	<div class="blob-base" bind:this={blobBase}>
-		<div class="blob-base__core" bind:this={blobCore}></div>
+		<div class="blob-base__core" bind:this={blobBaseCore}></div>
 	</div>
 	<div class="blob-stretch" bind:this={blobStretch}>
-		<div class="blob-stretch__core"></div>
+		<div class="blob-stretch__core" bind:this={blobStretchCore}></div>
 	</div>
 	<div class="vignette vignette--dark"></div>
 	<div class="vignette vignette--light"></div>
@@ -197,7 +201,6 @@
 		}
 	}
 
-	/* Two soft blobs the loop drives; their fills live on the cores below. */
 	.blob-base,
 	.blob-stretch {
 		position: absolute;
@@ -207,13 +210,11 @@
 		height: 78vmax;
 		margin: -39vmax 0 0 -39vmax;
 		opacity: var(--glow-opacity);
-		/* Eases the light on a theme switch. */
 		transition: opacity 0.6s ease;
 		mix-blend-mode: var(--glow-blend);
 		will-change: transform;
 	}
 
-	/* The base light: an organic blob, centred in its frame. Hardcoded blue. */
 	.blob-base__core {
 		position: absolute;
 		inset: 0;
@@ -224,14 +225,12 @@
 		border-radius: 47% 53% 41% 59% / 55% 44% 56% 45%;
 		background: radial-gradient(
 			closest-side,
-			hsl(220 100% 57.5% / 0.28),
-			hsl(217.7 100% 55.9% / 0.2) 60%,
-			hsl(216.1 100% 55.1% / 0.105) 100%
+			color-mix(in srgb, var(--blob-base) 28%, transparent),
+			color-mix(in srgb, var(--blob-base) 20%, transparent) 60%,
+			color-mix(in srgb, var(--blob-base) 10.5%, transparent) 100%
 		);
 	}
 
-	/* The stretch: an ellipse filling its frame, which the loop scales to the computed span, so
-	   the fill and the blur stretch with it. Hardcoded pink. */
 	.blob-stretch__core {
 		position: absolute;
 		inset: 0;
@@ -239,13 +238,11 @@
 		border-radius: 50%;
 		background: radial-gradient(
 			closest-side,
-			hsl(330 100% 57.5% / 0.28),
-			hsl(327.7 100% 55.9% / 0.2) 60%,
-			hsl(326.1 100% 55.1% / 0.105) 100%
+			color-mix(in srgb, var(--blob-stretch) 28%, transparent),
+			color-mix(in srgb, var(--blob-stretch) 20%, transparent) 60%,
+			color-mix(in srgb, var(--blob-stretch) 10.5%, transparent) 100%
 		);
 	}
-
-	/* ------------------------------------------------------------ grain */
 
 	.grain {
 		position: absolute;
@@ -272,9 +269,6 @@
 			grain-flicker-fine 0.34s steps(2) infinite alternate;
 	}
 
-	/* ------------------------------------------------------------ vignette */
-
-	/* One vignette per theme, cross-faded — gradient colours cannot interpolate. */
 	.vignette {
 		position: absolute;
 		inset: 0;
