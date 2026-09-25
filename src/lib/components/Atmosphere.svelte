@@ -2,19 +2,18 @@
 	import { browser } from '$app/environment';
 	import { cursor } from '$lib/utils/cursor.svelte';
 
-	// Two noise plates at different scales, plus a vignette. The plates are step-animated
-	// on a transform and an opacity so the grain crawls and flickers like film rather than
-	// sitting there as a static texture.
+	// Noise plates — step-animated so the grain crawls and flickers like film
 	const coarseNoise =
 		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
 	const fineNoise =
 		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E";
 
-	let glow = $state<HTMLElement | null>(null);
+	let blobBase = $state<HTMLElement | null>(null);
+	let blobStretch = $state<HTMLElement | null>(null);
+	let blobCore = $state<HTMLElement | null>(null);
 	let carrier = $state<HTMLElement | null>(null);
 
-	// The number the pointer is carrying over the grid. No easing here: a cursor label
-	// that trails reads as lag, and the show/hide motion is CSS.
+	// Mouse tracker onhover logic
 	$effect(() => {
 		if (!browser || !carrier) return;
 		if (window.matchMedia('(hover: none)').matches) return;
@@ -29,19 +28,32 @@
 		return () => window.removeEventListener('pointermove', onMove);
 	});
 
-	// The light leak follows the pointer, but only slowly: the rendered position eases
-	// toward the cursor at a low factor, wobbles on two slow sine terms, and stretches
-	// along its own direction of travel — so the light trails and sways instead of
-	// snapping to the cursor.
+	// Light movement logic
 	$effect(() => {
-		if (!browser || !glow) return;
+		if (!browser || !blobBase || !blobStretch || !blobCore) return;
 
-		const node = glow;
+		const nBlobBase = blobBase;
+		const nBlobStretch = blobStretch;
+		const nBlobCore = blobCore;
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const coarsePointer = window.matchMedia('(hover: none)').matches;
 
+		let radius = 0;
+		let frameSize = 1;
+		function measure() {
+			radius = (nBlobCore.offsetWidth + nBlobCore.offsetHeight) / 4;
+			frameSize = nBlobStretch.offsetWidth;
+		}
+		measure();
+		window.addEventListener('resize', measure);
+
 		if (reduced || coarsePointer) {
-			node.style.transform = `translate3d(${window.innerWidth * 0.78}px, ${window.innerHeight * 0.82}px, 0)`;
+		    // TODO: redirect to a static background
+			const parked = `translate3d(${window.innerWidth * 0.78}px, ${window.innerHeight * 0.82}px, 0)`;
+			nBlobBase.style.transform = parked;
+			nBlobStretch.style.transform = `${parked} scale(${(2 * radius) / frameSize})`;
+			nBlobStretch.style.opacity = '0';
+			return () => window.removeEventListener('resize', measure);
 			return;
 		}
 
@@ -49,11 +61,16 @@
 		let targetY = window.innerHeight * 0.82;
 		let x = targetX;
 		let y = targetY;
-		let previousX = x;
-		let previousY = y;
+		let sampledX = targetX;
+		let sampledY = targetY;
+		let reaction = 0;
 		let frame = 0;
+		let heading = 0; // the held direction from the pointer to the base, in radians
 
 		const follow = 0.022;
+		const attack = 0.2; // how fast the shape answers the pointer
+		const release = 0.045; // and how long it stays disturbed once the pointer stops
+		const speedFull = 34; // px the pointer covers in one frame at full reaction
 
 		function onPointerMove(event: PointerEvent) {
 			targetX = event.clientX;
@@ -64,21 +81,39 @@
 			x += (targetX - x) * follow;
 			y += (targetY - y) * follow;
 
+			// Pointer velocity
+			const travelX = targetX - sampledX;
+			const travelY = targetY - sampledY;
+			sampledX = targetX;
+			sampledY = targetY;
+
+			const wanted = Math.min(Math.hypot(travelX, travelY) / speedFull, 1);
+			reaction += (wanted - reaction) * (wanted > reaction ? attack : release);
+
 			const swayX = Math.sin(time * 0.00021) * 54 + Math.sin(time * 0.00057) * 20;
 			const swayY = Math.cos(time * 0.00029) * 42 + Math.sin(time * 0.00043) * 16;
 
-			const velocityX = x - previousX;
-			const velocityY = y - previousY;
-			const speed = Math.min(Math.hypot(velocityX, velocityY), 40);
+			const ox = x + swayX;
+			const oy = y + swayY;
+			nBlobBase.style.transform = `translate3d(${ox}px, ${oy}px, 0)`;
 
-			// Travel direction, mapped into a rotation, and a stretch along that axis.
-			const angle = (Math.atan2(velocityY, velocityX) * 180) / Math.PI;
-			const stretch = 1 + speed * 0.012;
+			// The stretch oval. With T the pointer, O the base's centre and R the radius, the point
+			// of the circle farthest from T is O + R·û, û = (O − T)/|O − T| — the maximiser of
+			// |X − T| over |X − O| = R. The oval's major axis spans T to that point; its width is
+			// the light's own diameter, so it rests on the light and grows towards the pointer.
+			const dx = ox - targetX;
+			const dy = oy - targetY;
+			const gap = Math.hypot(dx, dy);
+			if (gap > 1) heading = Math.atan2(dy, dx); // hold the last heading when they coincide
+			const midX = (targetX + ox + Math.cos(heading) * radius) / 2;
+			const midY = (targetY + oy + Math.sin(heading) * radius) / 2;
+			const span = gap + radius; // |T → P|
+			nBlobStretch.style.transform =
+				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
 
-			node.style.transform = `translate3d(${x + swayX}px, ${y + swayY}px, 0) rotate(${angle}deg) scale(${stretch}, ${2 - stretch})`;
+			const fade = Math.min(Math.max((gap - radius) / radius, 0), 1);
+			nBlobStretch.style.opacity = `calc(var(--glow-opacity) * ${fade.toFixed(3)})`;
 
-			previousX = x;
-			previousY = y;
 			frame = requestAnimationFrame(tick);
 		}
 
@@ -87,13 +122,19 @@
 
 		return () => {
 			window.removeEventListener('pointermove', onPointerMove);
+			window.removeEventListener('resize', measure);
 			cancelAnimationFrame(frame);
 		};
 	});
 </script>
 
 <div class="backdrop" aria-hidden="true">
-	<div class="glow" bind:this={glow}></div>
+	<div class="blob-base" bind:this={blobBase}>
+		<div class="blob-base__core" bind:this={blobCore}></div>
+	</div>
+	<div class="blob-stretch" bind:this={blobStretch}>
+		<div class="blob-stretch__core"></div>
+	</div>
 	<div class="vignette vignette--dark"></div>
 	<div class="vignette vignette--light"></div>
 </div>
@@ -110,7 +151,6 @@
 </div>
 
 <style>
-	/* Behind the content: the page's own light source. */
 	.backdrop {
 		position: fixed;
 		inset: 0;
@@ -119,7 +159,6 @@
 		overflow: hidden;
 	}
 
-	/* Over the content: film grain, the only layer that sits on top of the photographs. */
 	.overlay {
 		position: fixed;
 		inset: 0;
@@ -128,9 +167,6 @@
 		overflow: hidden;
 	}
 
-	/* ------------------------------------------------------------ cursor index */
-
-	/* Sits above the photographs, carrying the plate's number with the pointer. */
 	.carrier {
 		position: absolute;
 		top: 0;
@@ -138,7 +174,6 @@
 		will-change: transform;
 	}
 
-	/* The number the pointer is carrying is the one live readout on the grid. */
 	.carrier__label {
 		display: block;
 		margin: -1.6rem 0 0 1rem;
@@ -155,37 +190,59 @@
 		transform: scale(1);
 	}
 
-	/* A finger has no hover, and a label pinned under the finger is just in the way. */
+	/* If no hover, disable carrier */
 	@media (hover: none) {
 		.carrier {
 			display: none;
 		}
 	}
 
-	/* ------------------------------------------------------------ light leak */
-
-	/* Hue 36 and 31, against the accent's 35.8: the light and the signal are one warm
-	   family. The stops used to sit at 22 and 13 — a redder orange that read as a second
-	   colour the moment the accent existed. */
-	.glow {
+	/* Two soft blobs the loop drives; their fills live on the cores below. */
+	.blob-base,
+	.blob-stretch {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 78vmax;
 		height: 78vmax;
 		margin: -39vmax 0 0 -39vmax;
-		background: radial-gradient(
-			closest-side,
-			rgba(255, 168, 38, 0.3),
-			rgba(255, 144, 25, 0.12) 42%,
-			transparent 70%
-		);
-		filter: blur(60px);
 		opacity: var(--glow-opacity);
-		/* So the light eases when the theme changes instead of snapping. */
+		/* Eases the light on a theme switch. */
 		transition: opacity 0.6s ease;
 		mix-blend-mode: var(--glow-blend);
 		will-change: transform;
+	}
+
+	/* The base light: an organic blob, centred in its frame. Hardcoded blue. */
+	.blob-base__core {
+		position: absolute;
+		inset: 0;
+		margin: auto;
+		filter: blur(44px);
+		width: 43.5%;
+		height: 39%;
+		border-radius: 47% 53% 41% 59% / 55% 44% 56% 45%;
+		background: radial-gradient(
+			closest-side,
+			hsl(220 100% 57.5% / 0.28),
+			hsl(217.7 100% 55.9% / 0.2) 60%,
+			hsl(216.1 100% 55.1% / 0.105) 100%
+		);
+	}
+
+	/* The stretch: an ellipse filling its frame, which the loop scales to the computed span, so
+	   the fill and the blur stretch with it. Hardcoded pink. */
+	.blob-stretch__core {
+		position: absolute;
+		inset: 0;
+		filter: blur(44px);
+		border-radius: 50%;
+		background: radial-gradient(
+			closest-side,
+			hsl(330 100% 57.5% / 0.28),
+			hsl(327.7 100% 55.9% / 0.2) 60%,
+			hsl(326.1 100% 55.1% / 0.105) 100%
+		);
 	}
 
 	/* ------------------------------------------------------------ grain */
@@ -217,8 +274,7 @@
 
 	/* ------------------------------------------------------------ vignette */
 
-	/* Two vignettes, one per theme, cross-faded by opacity: a gradient's colours cannot
-	   interpolate, so the only way to ease this on a theme switch is to swap layers. */
+	/* One vignette per theme, cross-faded — gradient colours cannot interpolate. */
 	.vignette {
 		position: absolute;
 		inset: 0;
