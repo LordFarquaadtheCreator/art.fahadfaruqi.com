@@ -116,7 +116,7 @@
 			nBlobStretch.style.transform =
 				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
 
-			// Opacity is the distance, and the base takes the inverse share, so the two blobs sum to 1.
+			// blobs are opposite opacities to prevent color clash, with base taking priority
 			const fade = Math.min(Math.max((gap - radius) / radius, 0), 1);
 			nBlobStretch.style.setProperty('--blob-fade', String(fade));
 			nBlobBase.style.setProperty('--blob-fade', String(1 - fade));
