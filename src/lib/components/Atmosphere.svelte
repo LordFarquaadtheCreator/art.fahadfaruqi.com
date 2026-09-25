@@ -65,11 +65,14 @@
 		let y = targetY;
 		let sampledX = targetX;
 		let sampledY = targetY;
+		let lagX = targetX;
+		let lagY = targetY;
 		let reaction = 0;
 		let frame = 0;
 		let heading = 0; // the held direction from the pointer to the base, in radians
 
 		const follow = 0.022;
+		const lagFollow = 0.1; // the stretch's tip follows on a slower pass — its delay
 		const attack = 0.2; // how fast the shape answers the pointer
 		const release = 0.045; // and how long it stays disturbed once the pointer stops
 		const speedFull = 34; // px the pointer covers in one frame at full reaction
@@ -82,6 +85,8 @@
 		function tick(time: number) {
 			x += (targetX - x) * follow;
 			y += (targetY - y) * follow;
+			lagX += (targetX - lagX) * lagFollow;
+			lagY += (targetY - lagY) * lagFollow;
 
 			// Pointer velocity
 			const travelX = targetX - sampledX;
@@ -99,17 +104,17 @@
 			const oy = y + swayY;
 			nBlobBase.style.transform = `translate3d(${ox}px, ${oy}px, 0)`;
 
-			// The stretch oval. With T the pointer, O the base's centre and R the radius, the point
-			// of the circle farthest from T is O + R·û, û = (O − T)/|O − T| — the maximiser of
-			// |X − T| over |X − O| = R. The oval's major axis spans T to that point; its width is
-			// the light's own diameter, so it rests on the light and grows towards the pointer.
-			const dx = ox - targetX;
-			const dy = oy - targetY;
+			// The stretch oval. With L the delayed tip, O the base's centre and R the radius, the
+			// point of the circle farthest from L is O + R·û, û = (O − L)/|O − L| — the maximiser
+			// of |X − L| over |X − O| = R. The oval's major axis spans L to that point; its width
+			// is the light's own diameter, so it rests on the light and grows towards the pointer.
+			const dx = ox - lagX;
+			const dy = oy - lagY;
 			const gap = Math.hypot(dx, dy);
 			if (gap > 1) heading = Math.atan2(dy, dx); // hold the last heading when they coincide
-			const midX = (targetX + ox + Math.cos(heading) * radius) / 2;
-			const midY = (targetY + oy + Math.sin(heading) * radius) / 2;
-			const span = gap + radius; // |T → P|
+			const midX = (lagX + ox + Math.cos(heading) * radius) / 2;
+			const midY = (lagY + oy + Math.sin(heading) * radius) / 2;
+			const span = gap + radius; // |L → P|
 			nBlobStretch.style.transform =
 				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
 
