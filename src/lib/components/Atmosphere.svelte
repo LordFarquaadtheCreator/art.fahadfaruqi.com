@@ -2,12 +2,6 @@
 	import { browser } from '$app/environment';
 	import { cursor } from '$lib/utils/cursor.svelte';
 
-	// Step-animated so the grain crawls and flickers like film
-	const coarseNoise =
-		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
-	const fineNoise =
-		"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E";
-
 	let blobBase = $state<HTMLElement | null>(null);
 	let blobStretch = $state<HTMLElement | null>(null);
 	let blobBaseCore = $state<HTMLElement | null>(null);
@@ -138,9 +132,11 @@
 <div class="backdrop" aria-hidden="true">
 	<div class="blob-base" bind:this={blobBase}>
 		<div class="blob-base__core" bind:this={blobBaseCore}></div>
+		<div class="blob-base__noise"></div>
 	</div>
 	<div class="blob-stretch" bind:this={blobStretch}>
 		<div class="blob-stretch__core"></div>
+		<div class="blob-stretch__noise"></div>
 	</div>
 	<div class="vignette vignette--dark"></div>
 	<div class="vignette vignette--light"></div>
@@ -148,9 +144,6 @@
 </div>
 
 <div class="overlay" aria-hidden="true">
-	<div class="grain grain--coarse" style="background-image: url('{coarseNoise}')"></div>
-	<div class="grain grain--fine" style="background-image: url('{fineNoise}')"></div>
-
 	<div class="carrier" bind:this={carrier}>
 		<span class="carrier__label label num" class:carrier__label--active={cursor.active}
 			>{cursor.label}</span
@@ -220,13 +213,18 @@
 		will-change: transform;
 	}
 
-	/* The base light: an organic blob, centred in its frame. Fill: --blob-base. */
-	.blob-base__core {
+	/* The box both layers of a blob share — the light, and the noise over it. */
+	.blob-base__core,
+	.blob-base__noise {
 		position: absolute;
 		inset: 0;
 		margin: auto;
 		width: 43.5%;
 		height: 39%;
+	}
+
+	/* The base light: an organic blob, centred in its frame. Fill: --blob-base. */
+	.blob-base__core {
 		filter: blur(44px);
 		border-radius: 47% 53% 41% 59% / 55% 44% 56% 45%;
 		background: radial-gradient(
@@ -238,11 +236,15 @@
 		opacity: var(--blob-fade, 1);
 	}
 
+	.blob-stretch__core,
+	.blob-stretch__noise {
+		position: absolute;
+		inset: 0;
+	}
+
 	/* The stretch: an ellipse filling its frame, which the loop scales to the computed span, so
 	   the fill and the blur stretch with it. Fill: --blob-stretch. */
 	.blob-stretch__core {
-		position: absolute;
-		inset: 0;
 		filter: blur(44px);
 		border-radius: 50%;
 		background: radial-gradient(
@@ -266,32 +268,22 @@
 			linear-gradient(to right, var(--mesh-ink) 0 1px, transparent 1px),
 			linear-gradient(to bottom, var(--mesh-ink) 0 1px, transparent 1px);
 		background-size: var(--mesh-cell) var(--mesh-cell);
+		opacity: var(--mesh-opacity);
 		mix-blend-mode: var(--mesh-blend);
 	}
 
-	.grain {
-		position: absolute;
-		inset: -40%;
-		background-repeat: repeat;
-		will-change: transform, opacity;
-	}
-
-	.grain--coarse {
-		background-size: 180px 180px;
-		opacity: var(--grain-opacity);
+	/* The noise, on the light only: masked with the light's own falloff and blended inside the
+	   frame, so it works on the light rather than over the page. The coarse texture sits on top;
+	   the fine one's features are sub-pixel, so it reads as a haze underneath. */
+	.blob-base__noise,
+	.blob-stretch__noise {
+		background-image:
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+		background-size: 180px 180px, 120px 120px;
+		mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+		opacity: calc(var(--grain-opacity) * var(--blob-fade, 1));
 		mix-blend-mode: var(--grain-blend);
-		animation:
-			grain-crawl 4.2s steps(7) infinite,
-			grain-flicker 0.6s steps(3) infinite alternate;
-	}
-
-	.grain--fine {
-		background-size: 120px 120px;
-		opacity: calc(var(--grain-opacity) * 0.62);
-		mix-blend-mode: soft-light;
-		animation:
-			grain-crawl-fine 2.6s steps(9) infinite reverse,
-			grain-flicker-fine 0.34s steps(2) infinite alternate;
 	}
 
 	.vignette {
@@ -319,60 +311,4 @@
 		opacity: 1;
 	}
 
-	@keyframes grain-crawl {
-		0% {
-			transform: translate3d(0, 0, 0);
-		}
-		20% {
-			transform: translate3d(-3%, 2%, 0);
-		}
-		40% {
-			transform: translate3d(2%, -3%, 0);
-		}
-		60% {
-			transform: translate3d(-2%, -2%, 0);
-		}
-		80% {
-			transform: translate3d(3%, 1%, 0);
-		}
-		100% {
-			transform: translate3d(0, 0, 0);
-		}
-	}
-
-	@keyframes grain-crawl-fine {
-		0% {
-			transform: translate3d(0, 0, 0);
-		}
-		25% {
-			transform: translate3d(2%, -1%, 0);
-		}
-		50% {
-			transform: translate3d(-1%, 2%, 0);
-		}
-		75% {
-			transform: translate3d(1%, 1%, 0);
-		}
-		100% {
-			transform: translate3d(0, 0, 0);
-		}
-	}
-
-	@keyframes grain-flicker {
-		from {
-			opacity: calc(var(--grain-opacity) * 0.72);
-		}
-		to {
-			opacity: calc(var(--grain-opacity) * 1.28);
-		}
-	}
-
-	@keyframes grain-flicker-fine {
-		from {
-			opacity: calc(var(--grain-opacity) * 0.45);
-		}
-		to {
-			opacity: calc(var(--grain-opacity) * 0.95);
-		}
-	}
 </style>
