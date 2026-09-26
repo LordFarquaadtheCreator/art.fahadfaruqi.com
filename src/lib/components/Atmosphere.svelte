@@ -132,14 +132,13 @@
 <div class="backdrop" aria-hidden="true">
 	<div class="blob-base" bind:this={blobBase}>
 		<div class="blob-base__core" bind:this={blobBaseCore}></div>
-		<div class="blob-base__noise"></div>
 	</div>
 	<div class="blob-stretch" bind:this={blobStretch}>
 		<div class="blob-stretch__core"></div>
-		<div class="blob-stretch__noise"></div>
 	</div>
 	<div class="vignette vignette--dark"></div>
 	<div class="vignette vignette--light"></div>
+	<div class="noise"></div>
 	<div class="mesh"></div>
 </div>
 
@@ -213,18 +212,13 @@
 		will-change: transform;
 	}
 
-	/* The box both layers of a blob share — the light, and the noise over it. */
-	.blob-base__core,
-	.blob-base__noise {
+	/* The base light: an organic blob, centred in its frame. Fill: --blob-base. */
+	.blob-base__core {
 		position: absolute;
 		inset: 0;
 		margin: auto;
 		width: 43.5%;
 		height: 39%;
-	}
-
-	/* The base light: an organic blob, centred in its frame. Fill: --blob-base. */
-	.blob-base__core {
 		filter: blur(44px);
 		border-radius: 47% 53% 41% 59% / 55% 44% 56% 45%;
 		background: radial-gradient(
@@ -236,15 +230,11 @@
 		opacity: var(--blob-fade, 1);
 	}
 
-	.blob-stretch__core,
-	.blob-stretch__noise {
-		position: absolute;
-		inset: 0;
-	}
-
 	/* The stretch: an ellipse filling its frame, which the loop scales to the computed span, so
 	   the fill and the blur stretch with it. Fill: --blob-stretch. */
 	.blob-stretch__core {
+		position: absolute;
+		inset: 0;
 		filter: blur(44px);
 		border-radius: 50%;
 		background: radial-gradient(
@@ -269,14 +259,14 @@
 		mix-blend-mode: var(--mesh-blend);
 	}
 
-	.blob-base__noise,
-	.blob-stretch__noise {
+	.noise {
+		position: absolute;
+		inset: 0;
 		background-image:
 			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
 			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
 		background-size: 180px 180px, 120px 120px;
-		mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
-		opacity: calc(var(--grain-opacity) * var(--blob-fade, 1));
+		opacity: var(--grain-opacity);
 		mix-blend-mode: var(--grain-blend);
 	}
 
