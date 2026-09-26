@@ -142,7 +142,7 @@ img {
 	--gutter: clamp(1rem, 3.2vw, 3rem);
 	--blob-size: 50vmax;
 	--blob-follow: 0.022; /* share of the remaining gap closed per frame — bigger is snappier */
-	--blob-lag-follow: 0.1; /* the stretch tip's own pass over the target — smaller lags further */
+	--blob-lag-follow: 0.05; /* the stretch tip's own pass over the target — smaller lags further */
 	--blob-sway: 1; /* multiplier on the idle wobble — 0 holds it still */
 	--blob-fade-span: 1; /* handoff width in radii — the fade reaches full at (1 + span) × R */
 	--blob-park-x: 0.78; /* resting spot, as a fraction of viewport width */
