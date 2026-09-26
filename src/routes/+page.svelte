@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import GalleryGrid from '$lib/components/GalleryGrid.svelte';
+	import ErrorPage from '$lib/components/ErrorPage.svelte';
 	import Hero from '$lib/components/Hero.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import SetIndex from '$lib/components/SetIndex.svelte';
@@ -114,7 +115,10 @@
 </script>
 
 <svelte:head>
-	<title>Fahad's Art</title>
+	<!-- The failure view is the error page, and that template carries the title for it. -->
+	{#if status !== 'error'}
+		<title>Fahad's Art</title>
+	{/if}
 	<meta
 		name="description"
 		content="Selected photographs by Fahad Faruqi. All human-made."
@@ -125,11 +129,9 @@
 
 <div class="stage">
 	{#if status === 'error' || leaving === 'error'}
-		<section class="state" class:leaving={leaving === 'error'} inert={leaving === 'error'}>
-			<p class="state__title fade-in-animation">The index could not be loaded.</p>
-			<p class="state__detail num fade-in-animation">{failure}</p>
-			<button class="state__retry label fade-in-animation" type="button" onclick={() => load()}>Retry</button>
-		</section>
+		<div class="failure" class:leaving={leaving === 'error'} inert={leaving === 'error'}>
+			<ErrorPage status={500} detail={failure} onAction={load} />
+		</div>
 	{/if}
 
 	{#if status === 'loading' || leaving === 'loading'}
@@ -175,40 +177,6 @@
 <style>
 	.stage {
 		position: relative;
-	}
-
-	.state {
-		padding-block: var(--block);
-	}
-
-	.state__title {
-		margin: 0 0 0.5rem;
-	}
-
-	.state__detail {
-		margin: 0 0 1.5rem;
-		font-size: 0.75rem;
-		color: var(--muted);
-		overflow-wrap: anywhere;
-	}
-
-	.state__retry {
-		border-bottom: 1px solid var(--line-2);
-		padding-bottom: 0.15rem;
-		transition:
-			color 0.25s ease,
-			border-color 0.25s ease,
-			transform 0.3s cubic-bezier(0.16, 0.84, 0.28, 1);
-	}
-
-	.state__retry:hover {
-		color: var(--fg);
-		border-bottom-color: var(--accent);
-		transform: translate3d(0, -1px, 0);
-	}
-
-	.state__retry:active {
-		transform: translate3d(0, 0, 0) scale(0.98);
 	}
 
 	.loading {
@@ -410,5 +378,10 @@
 	.leaving .loading__dot {
 		animation: none;
 		opacity: 1;
+	}
+
+	/* A failure leaves over less ground: it is a view, not the instrument. */
+	.failure.leaving {
+		animation-duration: 0.7s;
 	}
 </style>

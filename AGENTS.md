@@ -38,7 +38,7 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/routes/+page.svelte` | the page: fetch, set filtering, hero, gallery, footer |
 | `src/routes/+layout.svelte` | font import, favicon, global CSS entry |
 | `src/routes/+layout.ts` | `prerender = true`, `trailingSlash = 'never'` |
-| `src/routes/+error.svelte` | the error boundary: status and message from `page`, handed to `ErrorPage` |
+| `src/routes/+error.svelte` | the error boundary: one line, rendering `ErrorPage` with nothing passed |
 | `src/lib/utils/metadata.ts` | API types, fetch, mapping to the `Photo` shape |
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`), date formatting |
 | `src/lib/utils/group-images.ts` | grouping into sets, slugify, ordering |
@@ -57,7 +57,7 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/components/SplitText.svelte` | per-character assembly used for the display type |
 | `src/lib/components/ThemeToggle.svelte` | dark/light switch |
 | `src/lib/components/Atmosphere.svelte` | background blob layer + foreground grain |
-| `src/lib/components/ErrorPage.svelte` | the 404/failure page: status, line, the address that missed, way back |
+| `src/lib/components/ErrorPage.svelte` | the error template: status, copy, the address that missed, the way back — what every `+error.svelte` renders, and what a failed index read draws with `status = 500` |
 | `src/app.css` | Tailwind v4 entry, palette and layout tokens |
 | `src/app.html` | pre-paint theme resolution; must stay in step with the toggle |
 | `static/` | `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
@@ -519,6 +519,12 @@ grid's place.
   (`Receiving index` / `Index received` / `Index unavailable`), and the dot holds instead
   of pulsing once there is nothing left to wait on. What the read returned belongs to the
   hero's line, which counts it out as the band leaves.
+- **A read that fails is the error page.** The index is read in the browser, so its failure
+  belongs to the page: the failure view draws the same `ErrorPage` the router uses, with
+  `status = 500`, the reason in the readout register and another attempt as the action. It
+  cannot be thrown into `+error.svelte` — only a `load` that throws reaches the error
+  boundary, and the read cannot live in one: a universal load is re-run at hydration, which
+  awaits it, so the prerendered band would be hydrated against a gallery.
 - **The layer draws over the departure.** The plate canvas is fixed at z-index 4, above
   everything inside `main` (z-index 1), so in WebGL mode arriving plates composite over the
   band wherever they overlap. The strip and the hairline sit in the margin above the grid,
