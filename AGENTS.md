@@ -56,7 +56,7 @@ markup, and the gallery appears once the browser fetches the metadata API.
 | `src/lib/components/SetIndex.svelte` | the ALL / set / count navigation |
 | `src/lib/components/SplitText.svelte` | per-character assembly used for the display type |
 | `src/lib/components/ThemeToggle.svelte` | dark/light switch |
-| `src/lib/components/Atmosphere.svelte` | background glow layer + foreground grain |
+| `src/lib/components/Atmosphere.svelte` | background blob layer + foreground grain |
 | `src/lib/components/ErrorPage.svelte` | the 404/failure page: status, line, the address that missed, way back |
 | `src/app.css` | Tailwind v4 entry, palette and layout tokens |
 | `src/app.html` | pre-paint theme resolution; must stay in step with the toggle |
@@ -371,17 +371,17 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   three-line credit, then the band, then the work. There is no loading skeleton any
   more either; the hero's count line reports the fetch instead.
 - **Layers.** `Atmosphere.svelte` renders two fixed layers: `.backdrop` (z-index 0)
-  holding the pointer-tracked glow and the two vignettes, and `.overlay` (z-index 6)
-  holding the two grain plates. The glow is a light source **behind** the page, so
+  holding the pointer-tracked blob and the two vignettes, and `.overlay` (z-index 6)
+  holding the two grain plates. The blob is a light source **behind** the page, so
   `main` and `.footer` are lifted with `position: relative; z-index: 1` — remove that
   and the page content drops behind the light. Over the photographs there are exactly
   two things: the plate canvas (z-index 4) and the grain plates (6).
-- **Glow motion.** The pointer target is lerped at a very low follow factor (~0.022
+- **blob motion.** The pointer target is lerped at a very low follow factor (~0.022
   per frame) so the light trails and wobbles rather than tracking the cursor. It stays
   CSS: the WebGL pass this build does have draws the photographs, not the light.
 - **Theme.** Dark by default, light available through the toggle, stored in
   `localStorage.theme`. `src/app.html` resolves it before first paint, so the toggle
-  and that inline script must agree on the stored values. Palette, grain and glow
+  and that inline script must agree on the stored values. Palette, grain and blob
   strength are tokens in `src/app.css`. The two vignettes are the exception: a
   gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
   layers that cross-fade by opacity when the theme changes.
@@ -445,7 +445,7 @@ give the amber something to report.
 - **One amber cannot serve both themes.** `#dc8d18` is 7.42:1 on the dark ground and
   2.36:1 on the light one — failing even the 3.0 bar for UI components. Light therefore
   uses `#8a4a0a` (6.06:1): same hue, different lightness. Measure before changing either.
-- **Two warm colours are one too many.** The glow's stops sat at hue 22 and 13 while the
+- **Two warm colours are one too many.** The blob's stops sat at hue 22 and 13 while the
   accent is 35.8 — which read as two colours the moment the accent existed. They are now
   36 and 31, so the light and the signal belong to one family.
 - **The readout face ships.** `--font-mono` is IBM Plex Mono (latin subset, 400 only,
@@ -581,7 +581,7 @@ for v in w2200 w1600 w800 lqip; do curl -s -o /dev/null -w "$v %{http_code}\n" \
 ```
 
 In a browser, what "the gallery works" means: 27 `figure` elements across 3 sets, the
-grid images loading from `d/w800`, the backdrop glow present behind the content, two
+grid images loading from `d/w800`, the backdrop blob present behind the content, two
 grain layers in the overlay, and clicking a plate opening the viewer with its EXIF
 panel populated. `metadata-api/AGENTS.md` lists the Worker's own matrix (GET, HEAD,
 OPTIONS, trailing slash, 404s, CORS on errors).

@@ -206,9 +206,9 @@
 		width: 78vmax;
 		height: 78vmax;
 		margin: -39vmax 0 0 -39vmax;
-		opacity: var(--glow-opacity);
+		opacity: var(--blob-opacity);
 		transition: opacity 0.6s ease;
-		mix-blend-mode: var(--glow-blend);
+		mix-blend-mode: var(--blob-blend);
 		will-change: transform;
 	}
 
