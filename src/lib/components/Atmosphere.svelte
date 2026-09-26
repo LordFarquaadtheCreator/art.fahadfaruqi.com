@@ -41,9 +41,26 @@
 		measure();
 		window.addEventListener('resize', measure);
 
+		const tuning = getComputedStyle(document.documentElement);
+		function num(name: string) {
+			const value = parseFloat(tuning.getPropertyValue(name));
+			if (!Number.isFinite(value)) console.warn(`[Atmosphere] ${name} is not a number`);
+			return value;
+		}
+		const follow = num('--blob-follow');
+		const lagFollow = num('--blob-lag-follow');
+		const sway = num('--blob-sway');
+		const fadeSpan = num('--blob-fade-span');
+		const parkX = num('--blob-park-x');
+		const parkY = num('--blob-park-y');
+		const attack = num('--blob-attack');
+		const release = num('--blob-release');
+		const speedFull = num('--blob-speed-full');
+		const thin = num('--blob-stretch-thin');
+
 		if (reduced || coarsePointer) {
 		    // TODO: redirect to a static background
-			const parked = `translate3d(${window.innerWidth * 0.78}px, ${window.innerHeight * 0.82}px, 0)`;
+			const parked = `translate3d(${window.innerWidth * parkX}px, ${window.innerHeight * parkY}px, 0)`;
 			nBlobBase.style.transform = parked;
 			nBlobStretch.style.transform = `${parked} scale(${(2 * radius) / frameSize})`;
 			nBlobStretch.style.setProperty('--blob-fade', '0');
@@ -51,8 +68,8 @@
 			return () => window.removeEventListener('resize', measure);
 		}
 
-		let targetX = window.innerWidth * 0.78;
-		let targetY = window.innerHeight * 0.82;
+		let targetX = window.innerWidth * parkX;
+		let targetY = window.innerHeight * parkY;
 		let x = targetX;
 		let y = targetY;
 		let sampledX = targetX;
@@ -62,12 +79,6 @@
 		let reaction = 0;
 		let frame = 0;
 		let heading = 0; // the held direction from the pointer to the base, in radians
-
-		const follow = 0.022;
-		const lagFollow = 0.1; // the stretch's tip follows on a slower pass — its delay
-		const attack = 0.2; // how fast the shape answers the pointer
-		const release = 0.045; // and how long it stays disturbed once the pointer stops
-		const speedFull = 34; // px the pointer covers in one frame at full reaction
 
 		function onPointerMove(event: PointerEvent) {
 			targetX = event.clientX;
@@ -89,8 +100,8 @@
 			const wanted = Math.min(Math.hypot(travelX, travelY) / speedFull, 1);
 			reaction += (wanted - reaction) * (wanted > reaction ? attack : release);
 
-			const swayX = Math.sin(time * 0.00021) * 54 + Math.sin(time * 0.00057) * 20;
-			const swayY = Math.cos(time * 0.00029) * 42 + Math.sin(time * 0.00043) * 16;
+			const swayX = (Math.sin(time * 0.00021) * 54 + Math.sin(time * 0.00057) * 20) * sway;
+			const swayY = (Math.cos(time * 0.00029) * 42 + Math.sin(time * 0.00043) * 16) * sway;
 
 			const ox = x + swayX;
 			const oy = y + swayY;
@@ -107,11 +118,13 @@
 			const midX = (lagX + ox + Math.cos(heading) * radius) / 2;
 			const midY = (lagY + oy + Math.sin(heading) * radius) / 2;
 			const span = gap + radius; // |L → P|
+			// A fast pointer pulls the oval thin; the envelope is what remembers the speed.
+			const width = 2 * radius * (1 - reaction * thin);
 			nBlobStretch.style.transform =
-				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${(2 * radius) / frameSize})`;
+				`translate3d(${midX}px, ${midY}px, 0) rotate(${(heading * 180) / Math.PI}deg) scale(${span / frameSize}, ${width / frameSize})`;
 
 			// blobs are opposite opacities to prevent color clash, with base taking priority
-			const fade = Math.min(Math.max((gap - radius) / radius, 0), 1);
+			const fade = Math.min(Math.max((gap - radius) / (radius * fadeSpan), 0), 1);
 			nBlobStretch.style.setProperty('--blob-fade', String(fade));
 			nBlobBase.style.setProperty('--blob-fade', String(1 - fade));
 
@@ -203,9 +216,9 @@
 		position: absolute;
 		top: 0;
 		left: 0;
-		width: 78vmax;
-		height: 78vmax;
-		margin: -39vmax 0 0 -39vmax;
+		width: var(--blob-size);
+		height: var(--blob-size);
+		margin: calc(var(--blob-size) / -2) 0 0 calc(var(--blob-size) / -2);
 		opacity: var(--blob-opacity);
 		transition: opacity 0.6s ease;
 		mix-blend-mode: var(--blob-blend);

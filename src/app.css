@@ -25,7 +25,7 @@
 	--mesh-blend: overlay;
 	--blob-base: #dc8d18;
 	--blob-stretch: #dc8d18;
-	--blob-opacity: 0.68;
+	--blob-opacity: 0.5;
 	--blob-blend: screen;
 	--accent: #dc8d18;
 	--accent-line: rgba(220, 141, 24, 0.35);
@@ -140,6 +140,17 @@ img {
 
 :root {
 	--gutter: clamp(1rem, 3.2vw, 3rem);
+	--blob-size: 50vmax;
+	--blob-follow: 0.022; /* share of the remaining gap closed per frame — bigger is snappier */
+	--blob-lag-follow: 0.1; /* the stretch tip's own pass over the target — smaller lags further */
+	--blob-sway: 1; /* multiplier on the idle wobble — 0 holds it still */
+	--blob-fade-span: 1; /* handoff width in radii — the fade reaches full at (1 + span) × R */
+	--blob-park-x: 0.78; /* resting spot, as a fraction of viewport width */
+	--blob-park-y: 0.82; /* resting spot, as a fraction of viewport height */
+	--blob-attack: 0.2; /* how fast the reaction rises as the pointer speeds up */
+	--blob-release: 0.045; /* how slowly it lets go once the pointer stops */
+	--blob-speed-full: 34; /* pointer speed, px per frame, that saturates the reaction */
+	--blob-stretch-thin: 0.3; /* share of the stretch's width given up at full reaction */
 	--block: clamp(4rem, 12vh, 11rem);
 	--display: clamp(3.25rem, 13.5vw, 12rem);
 	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
