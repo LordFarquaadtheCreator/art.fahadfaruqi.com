@@ -28,7 +28,8 @@ Never return early from `fetch` without going through `finalizeResponse`.
 `route(request, env, ctx)`:
 
 - Computes `path` as `url.pathname.slice(4)` with trailing slashes stripped, so
-  `/api/metadata` and `/api/metadata/` both yield `/metadata`.
+  `/api/metadata` and `/api/metadata/` both yield `/metadata`, and a path that empties
+  out becomes `/`.
 - `OPTIONS` on **any** `/api/*` path returns a bare `204`. This happens before
   the cache lookup and before any R2 call, so a preflight cannot collide with a
   cached GET.
@@ -50,10 +51,13 @@ string, which silently broke both the method check and the cache key.
    headers.
 4. Hand the write to `ctx.waitUntil`. Not `await` — see below.
 
-`listAllObjects(env)` pages `env.ASSETS_BUCKET.list({ cursor, limit: PAGE_SIZE })`
-until `listing.truncated` is false, and maps each object to
-`{ url, key, size, uploaded, etag }` with `obj.customMetadata` spread over it.
-Past `MAX_OBJECTS` it throws rather than returning a partial gallery.
+`listAllObjects(env)` pages `env.ASSETS_BUCKET.list({ cursor, limit: PAGE_SIZE,
+include: ["customMetadata", "httpMetadata"] })` until `listing.truncated` is false,
+and maps each object to `{ url, key, size, uploaded, etag }` with `obj.customMetadata`
+spread over it. Keys under `IGNORED_PREFIXES` — `d/` for this site's generated
+derivatives, `www/` for fahadfaruqi.com sharing the bucket — are skipped, so the
+listing holds originals only. Past `MAX_OBJECTS` it throws rather than returning a
+partial gallery.
 
 ## Why `ctx.waitUntil`, not `await`
 
@@ -94,7 +98,7 @@ with a 300ms write: awaited, the client waited 305ms; with `waitUntil`, under
 ## Caching
 
 - The Cache API entry lives and dies by `Cache-Control` on the response passed to
-  `put()`, so `s-maxage=604800` governs the stored entry's TTL and `max-age`
+  `put()`, so `s-maxage=600` governs the stored entry's TTL and `max-age`
   governs the browser. Both come from the one header.
 - **The cache is per-data-center, not globally replicated.** Content cached in one
   data center does not exist in another until that one is asked. Do not describe
@@ -111,14 +115,14 @@ with a 300ms write: awaited, the client waited 305ms; with `waitUntil`, under
   last, so a metadata key named `url`, `key`, `size`, `uploaded`, or `etag`
   overwrites the generated value. Treat those as reserved.
 - `uploaded` is `Date.prototype.toISOString()`; `etag` is R2's raw etag.
-- TTLs and limits live in the constants at the top of the file: 7 days entry,
-  1 day browser, 1 day preflight, `PAGE_SIZE`, `MAX_OBJECTS`.
+- TTLs and limits live in the constants at the top of the file: 10 minutes entry,
+  10 minutes browser, 1 day preflight, `PAGE_SIZE`, `MAX_OBJECTS`.
 
 ## Gotchas
 
-- The listing is cached for 7 days. Newly uploaded objects will not appear until
-  that entry expires or the Worker is redeployed (which repopulates that data
-  center on the next request). A `?v=N` query param bypasses it.
+- The listing is cached for 10 minutes, entry and browser. Newly uploaded objects will
+  not appear until that entry expires or the Worker is redeployed (which repopulates that
+  data center on the next request). A `?v=N` query param bypasses it.
 - The predecessor Worker `assets-api` is deleted and cannot be deleted again; the
   route `assets.fahadfaruqi.com/api/*` now belongs to this Worker. If you rename
   the Worker, delete the current one **before** deploying the rename. Only one

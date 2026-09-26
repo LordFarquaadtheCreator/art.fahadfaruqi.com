@@ -39,15 +39,26 @@ R2 bucket "assets"
 - **Portrait-aware.** Plates whose photograph is taller than it is wide get a narrower
   span, so they sit inside the rhythm instead of towering over their neighbours.
 - **Blur-up loading.** Each cell reserves its aspect ratio from a 24px placeholder, so
-  the page does not shift as the 800px images arrive.
+  the page does not shift as the 800px images arrive. The viewer stands the grid's own
+  800px derivative behind the photograph instead, because at full size a 24px source is
+  an unrecognisable wash.
 - **Viewer.** Clicking a plate opens the full-screen viewer with the 2200px image, the
-  caption, and the camera, lens, focal length, aperture, shutter and date. Arrow keys
-  move between photographs, Escape closes, and swipes work on touch.
+  caption, and the camera, lens, focal length, aperture, shutter, date and file size.
+  Arrow keys move between photographs, Escape closes, and swipes work on touch.
 - **Dark by default** with a light option; the choice is remembered. Palette, grain and
   light are CSS custom properties, and the theme is resolved before first paint.
-- **Film grain and a moving light.** Two grain plates are drawn over the page as a film
-  layer; behind it, a warm light follows the pointer with a heavy lag, so it trails and
-  wobbles rather than tracking the cursor exactly.
+- **A treated print.** Visible plates are drawn as textured quads on one WebGL canvas
+  over the photograph — displacement, an RGB split, a print grade, halation and grain —
+  with the `<img>` still underneath, so a browser without WebGL loses the effect and
+  nothing else.
+- **A backdrop and a moving light.** Grain, a faint mesh and two vignettes sit behind the
+  content; in front of them, a warm light follows the pointer through a base blob and a
+  stretch oval drawn between the pointer and where the light has reached, so it trails,
+  wobbles, and pulls thin when the pointer moves fast.
+- **A readout register.** The header carries the site's tabs, a scroll-progress hairline
+  and the theme switch; the set filter counts each set; hovering a plate carries its
+  number by the pointer; the viewer frames the photograph with its position in the run.
+  Every number comes from the listing.
 
 ## Running it locally
 
@@ -66,22 +77,31 @@ the production URLs are used, which is what CI does.
 
 | Path | What it is |
 | --- | --- |
-| `src/routes/+page.svelte` | the page: fetch, set filtering, hero, gallery, footer |
+| `src/routes/+page.svelte` | the page: the index read, the wait band, set filtering, the viewer's state |
+| `src/routes/+layout.svelte` | the site chrome and the scroll state that drives the header |
+| `src/routes/about/+page.svelte` | the About page — a stub with no content yet |
 | `src/lib/utils/metadata.ts` | API types, fetch, mapping to the `Photo` shape |
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`) |
 | `src/lib/utils/group-images.ts` | grouping into sets, ordering |
 | `src/lib/utils/variants.ts` | derivative URL convention |
+| `src/lib/webgl/` | the plate layer: one canvas, one quad per visible plate, the print shaders |
+| `src/lib/components/Header.svelte` | tabs, theme switch, scroll-progress hairline |
+| `src/lib/components/Hero.svelte` | the name, the credit lines and the count |
 | `src/lib/components/GalleryGrid.svelte` | per-set sections, offset grid, reveal |
-| `src/lib/components/PhotoPlate.svelte` | one photograph: placeholder, image, caption |
-| `src/lib/components/Lightbox.svelte` | viewer with the EXIF panel |
-| `src/lib/components/SetIndex.svelte` | ALL / set / count navigation |
-| `src/lib/components/SplitText.svelte` | per-character assembly for the display type |
+| `src/lib/components/SetCard.svelte` | a set's chapter card and its sticky header |
+| `src/lib/components/PhotoPlate.svelte` | one photograph: placeholder, image, caption, note |
+| `src/lib/components/Lightbox.svelte` | viewer with the panel, keyboard and swipe |
+| `src/lib/components/MetadataDisplay.svelte` | the EXIF and file-size panel |
+| `src/lib/components/SetIndex.svelte` | ALL / set / count filter row |
+| `src/lib/components/SplitText.svelte` | segmented slice assembly for the display type |
 | `src/lib/components/ThemeToggle.svelte` | dark / light switch |
-| `src/lib/components/Atmosphere.svelte` | grain layer and pointer-tracked light |
-| `src/app.css` | Tailwind v4 entry, palette, type and grid tokens |
+| `src/lib/components/Footer.svelte` | the footer row and the copy-email button |
+| `src/lib/components/ToTop.svelte` | the scroll-to-top control |
+| `src/lib/components/Atmosphere.svelte` | backdrop (light, vignettes, noise, mesh) and the pointer's readout |
+| `src/lib/components/ErrorPage.svelte` | the template every error page renders |
+| `src/app.css` | Tailwind v4 entry, palette, type and layout tokens |
 | `metadata-api/` | the Cloudflare Worker behind `/api/metadata` |
 | `scripts/` | Go CLI for managing images and their metadata in the bucket |
-| `website-draft.md` | the design brief, including the reference this build follows |
 
 ## Images and metadata
 
@@ -115,5 +135,7 @@ bun run worker:deploy
 ## Design credit
 
 The layout follows the Stefan Vitasović portfolio case study published on Codrops
-(2025), as recorded in `website-draft.md`. The grain and pointer-tracked light here are
-CSS approximations of that site's WebGL layer.
+(2025). The performance is still the cheap one: every photograph in the gallery is a
+plain `<img>` that a browser without WebGL renders on its own, and the layer above it is
+an effect rather than the delivery mechanism. The print treatment and the pointer-tracked
+light are this site's own, built on that reference rather than copied from it.

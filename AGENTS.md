@@ -28,42 +28,55 @@ Cloudflare R2 bucket "assets"
         bun run build → build/ → GitHub Pages (art.fahadfaruqi.com)
 ```
 
-There is no server-side component in this repo's own build: the page is static
-markup, and the gallery appears once the browser fetches the metadata API.
+The deployed site has no server side: the build prerenders the pages into static
+markup, and the gallery appears once the browser fetches the metadata API. Two routes
+come out of the build — the gallery (`/`) and a stub About page (`/about`) — plus the
+`404.html` app shell. `hooks.server.ts` exists but runs only during the build, where it
+substitutes the canvas colours into `app.html`.
 
 ## Repository map
 
 | Path | What it is |
 | --- | --- |
-| `src/routes/+page.svelte` | the page: fetch, set filtering, hero, gallery, footer |
-| `src/routes/+layout.svelte` | font import, favicon, global CSS entry |
+| `src/routes/+page.svelte` | the page: the index read, the wait band, the failure view, set filtering, the viewer's state |
+| `src/routes/+layout.svelte` | fonts, global CSS, and the site chrome — `Header`, `main`, `Footer`, `ToTop`, `Atmosphere`; owns the scroll state that drives the header |
+| `src/routes/about/+page.svelte` | the About tab's page — a stub with no content yet |
 | `src/routes/+layout.ts` | `prerender = true`, `trailingSlash = 'never'` |
 | `src/routes/+error.svelte` | the error boundary: one line, rendering `ErrorPage` with nothing passed |
+| `src/hooks.server.ts` | build-time substitution of the `%theme.canvas.*%` placeholders in `app.html` |
 | `src/lib/utils/metadata.ts` | API types, fetch, mapping to the `Photo` shape |
 | `src/lib/utils/exif.ts` | EXIF rationals → display strings (`7/2` → `f/3.5`), date formatting |
 | `src/lib/utils/group-images.ts` | grouping into sets, slugify, ordering |
 | `src/lib/utils/variants.ts` | derivative URL convention |
 | `src/lib/utils/parallax.ts` | one shared loop for the plates' scroll drift |
 | `src/lib/utils/cursor.svelte.ts` | the number the pointer carries over the grid |
+| `src/lib/utils/bytes.ts` | byte sizes for the viewer's File row |
+| `src/lib/utils/theme.ts` | the two canvas colours, shared by `app.html` and the toggle |
 | `src/lib/actions/count.ts` | animates a number to its new value; writes it outright when hidden |
 | `src/lib/actions/reveal.ts` | entrance for what is below the fold; never claims what is on screen |
+| `src/lib/actions/nav-line.ts` | hands `.nav-button` the side the pointer arrived from |
 | `src/lib/webgl/layer.ts` | module-level singleton + the Svelte action that registers a plate |
 | `src/lib/webgl/PlateLayer.ts` | the canvas: one quad per visible plate, rect-driven, texture budget |
 | `src/lib/webgl/shaders.ts` | GLSL for the plate quads |
+| `src/lib/components/Header.svelte` | the masthead: site tabs, `ThemeToggle`, the scroll-progress hairline |
+| `src/lib/components/Hero.svelte` | the name (`SplitText`) and the credit and count lines |
 | `src/lib/components/GalleryGrid.svelte` | per-set sections, offset 12-column grid, reveal observer |
-| `src/lib/components/PhotoPlate.svelte` | one photograph: LQIP, image, caption |
-| `src/lib/components/Lightbox.svelte` | full-screen viewer: EXIF panel, keyboard, swipe |
-| `src/lib/components/SetIndex.svelte` | the ALL / set / count navigation |
-| `src/lib/components/SplitText.svelte` | per-character assembly used for the display type |
+| `src/lib/components/SetCard.svelte` | a set's chapter card and its sticky header; the card's parts travel into the header when it pins |
+| `src/lib/components/PhotoPlate.svelte` | one photograph: LQIP, image, caption, note |
+| `src/lib/components/Lightbox.svelte` | full-screen viewer: panel, keyboard, swipe |
+| `src/lib/components/MetadataDisplay.svelte` | the EXIF + file-size panel the viewer renders |
+| `src/lib/components/SetIndex.svelte` | the ALL / set / count filter row |
+| `src/lib/components/SplitText.svelte` | segmented slice assembly used for the display type |
 | `src/lib/components/ThemeToggle.svelte` | dark/light switch |
-| `src/lib/components/Atmosphere.svelte` | background blob layer + foreground grain |
+| `src/lib/components/Footer.svelte` | the footer row and the copy-email button |
+| `src/lib/components/ToTop.svelte` | the scroll-to-top control, shown past 8% of the page |
+| `src/lib/components/Atmosphere.svelte` | the backdrop (light, vignettes, noise, mesh) and the pointer's readout |
 | `src/lib/components/ErrorPage.svelte` | the error template: status, copy, the address that missed, the way back — what every `+error.svelte` renders, and what a failed index read draws with `status = 500` |
 | `src/app.css` | Tailwind v4 entry, palette and layout tokens |
 | `src/app.html` | pre-paint theme resolution; must stay in step with the toggle |
 | `static/` | `favicon.png`, `robots.txt`, `.nojekyll` — copied verbatim into `build/` |
 | `metadata-api/` | the Worker that serves `/api/metadata` |
 | `scripts/` | Go CLI for managing the bucket. **Go only** — see Rules |
-| `website-draft.md` | the design brief this build follows, including the reference |
 
 ## Local development
 
@@ -128,11 +141,12 @@ Consequences to keep in mind:
 - The worker requests `include: ["customMetadata", "httpMetadata"]` from R2's
   `list()`. R2 omits both unless asked, and dropping that option silently strips
   every curated field and all EXIF from the response — this was the original bug.
-- The listing is cached at the edge for 7 days. New uploads do not appear until the
-  entry expires or the Worker is redeployed. `?cb=<anything>` busts it, which is how
+- The listing is cached for 10 minutes, entry and browser. New uploads do not appear until
+  the entry expires or the Worker is redeployed. `?cb=<anything>` busts it, which is how
   the derivative generator and anyone debugging should read it.
-- `d/` keys are filtered out of the listing (`DERIVATIVE_PREFIX` in the Worker).
-  Adding a new derivative variant does not require touching the gallery.
+- `d/` keys are filtered out of the listing (`IGNORED_PREFIXES` in the Worker), as are
+  `www/` keys, which belong to fahadfaruqi.com sharing the bucket. Adding a new
+  derivative variant does not require touching the gallery.
 
 ## Image derivatives
 
@@ -166,9 +180,10 @@ done
 
 **There is no committed generator.** The script used to create these was deliberately
 kept out of the repo (the user's rule: `scripts/` holds Go only). It lives at
-`~/.hermes/cache/scratch/derivatives.mjs` on the machine that ran it, uses `sharp`,
-reads the metadata API, skips derivatives that already return 200, and uploads through
-`bunx wrangler r2 object put --remote` with
+`~/.hermes/cache/scratch/derivatives.mjs` on the machine that ran it, uses `sharp`
+(not a dependency of this repo, so it must be installed where the script runs), reads
+the metadata API with a `?cb=` cache-buster, skips derivatives that already return 200
+(unless run with `--force`), and uploads through `wrangler r2 object put --remote` with
 `cache-control: public, max-age=31536000, immutable`. If it is gone, rewriting it is
 a small job: read the listing, resize to the four widths above, upload to the four
 `d/` prefixes. It needs R2 credentials, which are in `scripts/config.yaml` (gitignored).
@@ -178,8 +193,9 @@ is one more lossy generation: regenerate from a fresh export rather than repeate
 ## The WebGL layer
 
 `src/lib/webgl/` draws every visible plate as a textured quad on **one** fixed
-canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
-27 contexts would be 27 copies of the GPU state and a hard browser limit.
+canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph — a
+context each would be a copy of the GPU state each, straight into the browser's
+per-page limit.
 
 - `layer.ts` owns the module-level singleton and the Svelte action
   `registerPlate(frame)` that `PhotoPlate.svelte` applies to `.plate__frame`.
@@ -208,12 +224,14 @@ canvas (`.plate-canvas`, `z-index: 4`). One context, not one per photograph —
 - Both arrive through `uGrade`/`uGrain` as *uniforms*, so the shader has one code path:
   switching either off mixes to the untouched photograph rather than compiling a
   different program.
-- The page-wide grain plates stay, but their opacity dropped (`--grain-opacity: 0.16`
-  dark, `0.055` light) — the photographs now carry real grain, and at the old strength
-  the two multiplied into mud.
-- The grade lives in the fragment shader for a reason: the CSS hover zoom it replaced
-  could not be seen at all once the quad covered the image. Anything that changes how a
-  photograph looks belongs here, not in a rule on `.plate__image`.
+- The page-wide noise field sits in the backdrop, behind the content — a texture on the
+  room, not a second pass over the photographs — with a stepped jitter and a density
+  flicker rather than a drift; its opacity is `--grain-opacity: 0.25` dark, `0.5` light,
+  with `color-dodge` on dark and `screen` on light. The photographs carry their own grain
+  in the shader.
+- The visible pointer zoom is the shader's (`uHover`, done in UV space so it cannot
+  spill over the caption); the CSS transform left on `.plate__image` only shows on the
+  fallback path, when `data-webgl` is `off` and the DOM image is the photograph.
 - **A shader change cannot be verified by building.** `bun run build` never compiles
   GLSL, so a broken shader ships silently and only fails in a browser that draws a
   frame — which is exactly what the automation tab never does. Compile the source in a
@@ -235,14 +253,15 @@ This is bucket state, not repo state, so it is not in git:
 
 ```sh
 cat > /tmp/r2-cors.json <<'JSON'
-{"rules":[{"allowed":{"origins":["https://art.fahadfaruqi.com","https://lordfarquaadthecreator.github.io","http://localhost:4173","http://localhost:5200"],"methods":["GET","HEAD"],"headers":["*"]},"exposeHeaders":["ETag","Content-Length"],"maxAgeSeconds":86400}]}
+{"rules":[{"allowed":{"origins":["https://art.fahadfaruqi.com","https://lordfarquaadthecreator.github.io","http://localhost:4173","http://localhost:5173"],"methods":["GET","HEAD"],"headers":["*"]},"exposeHeaders":["ETag","Content-Length"],"maxAgeSeconds":86400}]}
 JSON
 cd metadata-api && npx wrangler r2 bucket cors set assets --file /tmp/r2-cors.json
 curl -s -D- -o /dev/null -H "Origin: https://art.fahadfaruqi.com" \
   https://assets.fahadfaruqi.com/d/w800/sam-10.webp | grep -i access-control-allow-origin
 ```
 
-Note the shape: `wrangler r2 bucket cors set` takes the Wrangler
+`4173` is `vite preview` and `5173` is `vite dev`; without the second, the layer cannot
+fetch a plate while developing. Note the shape: `wrangler r2 bucket cors set` takes the Wrangler
 `{rules:[{allowed:{…}}]}` form, **not** the R2 REST `AllowedOrigins` shape, which
 it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
 
@@ -278,16 +297,17 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   once with `cache: 'reload'` — only a network refetch clears it.
 - **State that JavaScript sets belongs in a bound class, not a `data-` attribute.**
   Svelte's compiler matches attribute selectors against the markup literally, so
-  `.masthead[data-scrolled='true']` is reported as an unused selector (and stripped)
+  `.header[data-scrolled='true']` is reported as an unused selector (and stripped)
   when the markup says `data-scrolled="false"`. Declaring the attribute does not help
   — only an *equal* literal counts. A `class:` binding is compiler-visible and scoped,
-  so the rule survives and still wins on specificity. An action-set attribute needs
+  so the rule survives and still wins on specificity (the header's scrolled state is
+  `class:header--scrolled` for exactly this reason). An action-set attribute needs
   `:global()`, declared *after* the scoped base rule, because the two tie and source
   order decides.
 - **A computed style read straight after a class or attribute change lies in this
   automation tab.** Transitions only advance when frames are produced, and a hidden tab
   produces none, so `getComputedStyle` reports the *starting* value of a rule that is
-  in fact winning. This has now cost time twice (the light-theme probe, the masthead's
+  in fact winning. This has now cost time twice (the light-theme probe, the header's
   scrolled state). Inject `*{transition:none!important}` first, then read.
 - **The hidden automation tab delivers neither clicks nor scroll events.** CDP
   `Input.dispatchMouseEvent` moves the pointer (the cursor-index label updates, so
@@ -295,8 +315,8 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
   added by hand counts 0. Drive interactions with DOM events instead:
   `el.dispatchEvent(new MouseEvent('click', {bubbles: true, composed: true}))` reaches
   Svelte's delegated handler, and `window.dispatchEvent(new Event('scroll'))` exercises
-  a scroll handler (the masthead's `--progress` then reads 0.0857 at 1500px of 17501px,
-  which is the arithmetic checked end to end). Anything genuinely routed through
+  a scroll handler (the header's `--progress` then reflects the scroll arithmetic, which
+  is how a scroll handler is checked end to end). Anything genuinely routed through
   `requestAnimationFrame` — the parallax loop, a count-up — cannot be verified here.
 - **A DOM click before hydration does nothing.** The plates are in the prerendered HTML
   before Svelte attaches its handlers, so a probe that clicks the moment `.plate` appears
@@ -309,7 +329,7 @@ it rejects. Only the Worker's `/api/*` responses set CORS by themselves.
 - **Script execution can be switched off to see the pre-hydration page.**
   `Emulation.setScriptExecutionDisabled(true)` then a reload renders the prerendered markup
   with the stylesheets applied and no hydration at all — the only way to inspect the states
-  that exist before the app boots, which is where the loading band lives and where the
+  that exist before the app boots, which is where the wait band lives and where the
   canvas colour is decided. Re-enable it and reload when done.
 - **To count WebGL contexts, instrument `getContext` before the app boots.** Surplus
   contexts usually come from detached probe canvases, which no DOM query can see —
@@ -340,20 +360,16 @@ Every animation on the site follows the same four rules.
   same property.
 - **Reduced motion is one global rule** (`src/app.css`): durations collapse to
   0.001ms **and `animation-iteration-count` is reset to 1**. The second half is not
-  optional — the grain plates and the marquee run `infinite`, and collapsing only the
-  duration turns them into thousands of cycles a second. JS-driven motion — the
-  count-up, the parallax loop, the viewer's open/close — checks
+  optional — the noise field, the wait band's hairline and its dot run `infinite`, and
+  collapsing only the duration turns them into thousands of cycles a second. JS-driven
+  motion — the count-up, the parallax loop, the viewer's open/close — checks
   `prefers-reduced-motion` itself, and the count-up writes its final value outright
   when `document.hidden`, because a hidden document produces no frames to count with.
-- **A marquee is two identical runs translated by half the track.** `.marquee__track`
-  holds two `.marquee__run` elements and animates to `translate3d(-50%, 0, 0)`, so the
-  loop is seamless because the second run lands exactly where the first began; hover
-  holds it still. Anything less than half the track jumps at the seam.
 
 ## Design system
 
-The reference for the layout is the Stefan Vitasović portfolio (2025) as recorded in
-`website-draft.md`. What that means in code:
+The reference for the layout is the Stefan Vitasović portfolio case study published on
+Codrops (2025). What that means in code:
 
 - **Grid.** 12 columns at ≥1024px with explicit `grid-column` starts per cell index
   (`.cell--0` … `.cell--7`), which is what makes the composition asymmetric and
@@ -364,49 +380,59 @@ The reference for the layout is the Stefan Vitasović portfolio (2025) as record
   by `:nth-child(even)`. `PhotoPlate` sets that class from the LQIP's aspect ratio.
   In the single-column layout, `max-width: calc(var(--ratio) * 74vh)` stops a portrait
   from being several screens tall.
-- **One way to filter.** `SetIndex` in the masthead is the only navigation. The hero
-  used to carry a second, larger copy of the same list — a set table with counts and
-  dates — and it was removed: two controls doing the same job made the top of the page
-  read as a contents page rather than as a photograph. The hero is the name and the
-  three-line credit, then the band, then the work. There is no loading skeleton any
-  more either; the hero's count line reports the fetch instead.
+- **One way to filter, one way to navigate.** The masthead (`Header.svelte`) carries the
+  site's tabs — Photos and About — and `ThemeToggle`; the set filter (`SetIndex.svelte`)
+  sits between the hero and the grid and is the only control for the sets. The hero used
+  to carry a second, larger copy of the same list — a set table with counts and dates —
+  and it was removed: two controls doing the same job made the top of the page read as a
+  contents page rather than as a photograph. The hero is the name and the meta grid (the
+  three credit lines and the count), then the band, then the work. The count line reports
+  the fetch: `Loading photos` while it is out, the count once it lands, `Photos
+  unavailable` if it fails.
 - **Layers.** `Atmosphere.svelte` renders two fixed layers: `.backdrop` (z-index 0)
-  holding the pointer-tracked blob and the two vignettes, and `.overlay` (z-index 6)
-  holding the two grain plates. The blob is a light source **behind** the page, so
-  `main` and `.footer` are lifted with `position: relative; z-index: 1` — remove that
-  and the page content drops behind the light. Over the photographs there are exactly
-  two things: the plate canvas (z-index 4) and the grain plates (6).
-- **blob motion.** The pointer target is lerped at a very low follow factor (~0.022
-  per frame) so the light trails and wobbles rather than tracking the cursor. It stays
-  CSS: the WebGL pass this build does have draws the photographs, not the light.
+  holding the two blob layers, the two vignettes, the noise field and the mesh, and
+  `.overlay` (z-index 6) holding the pointer's index readout. The light is a source
+  **behind** the page, so `main` and `.footer` are lifted with `position: relative;
+  z-index: 1` — remove that and the page content drops behind the light. Over the
+  photographs there are exactly two things: the plate canvas (z-index 4) and, on a
+  hover-capable device, the pointer's readout (6).
+- **blob motion.** Two layers are one light: a base blob lerped toward the pointer at a
+  very low follow factor (`--blob-follow`, ~0.022 per frame) so it trails and wobbles,
+  and a stretch oval drawn between the pointer and where the light has actually reached,
+  so a fast pointer pulls it thin and it settles back when the pointer stops. The tuning
+  is tokens in `src/app.css` (`--blob-*`); reduced motion or a coarse pointer parks the
+  light instead of tracking.
 - **Theme.** Dark by default, light available through the toggle, stored in
   `localStorage.theme`. `src/app.html` resolves it before first paint, so the toggle
   and that inline script must agree on the stored values. Palette, grain and blob
-  strength are tokens in `src/app.css`. The two vignettes are the exception: a
-  gradient's colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed
-  layers that cross-fade by opacity when the theme changes.
+  strength are tokens in `src/app.css`; the two canvas colours are in
+  `src/lib/utils/theme.ts`, because the pre-paint script needs them before any
+  stylesheet loads. The two vignettes are the exception to the tokens: a gradient's
+  colours cannot interpolate, so both sit in `Atmosphere.svelte` as fixed layers that
+  cross-fade by opacity when the theme changes.
 
 ### One context, not one per plate
 
 The layer is built on a single canvas, and for a long time the page was quietly creating
 more than twenty. `supported()` — the "can this browser give us a WebGL context at all"
 check — ran on **every** plate registration, and each run left a detached probe canvas
-holding a context the browser would not collect for a while. Measured on a loaded page:
-**27 plates, 30 contexts, 27 of them probes.**
+holding a context the browser would not collect for a while. Measured on a loaded page
+at the time (27 plates then; the listing holds 34 now): **27 plates, 30 contexts, 27 of
+them probes.**
 
 Chrome caps live contexts per page and kills the oldest once you pass the cap — the
 console warning `Too many active WebGL contexts. Oldest context will be lost.`, followed by
 `THREE.WebGLRenderer: Context Lost.` A canvas whose context has been taken from it
 composites as an **opaque white rectangle**. This one is `position: fixed; inset: 0` at
-`z-index: 4` — above every photograph, below the masthead — so what a visitor saw was a
+`z-index: 4` — above every photograph, below the header — so what a visitor saw was a
 white page with the nav bar intact. That is the white flash. Nothing about it is
 dev-specific: it happened in production too.
 
 Three changes, each sufficient to stop it alone:
 
 - **Ask once per document.** `probeResult` memoises the answer, and the probe's context is
-  handed straight back through `WEBGL_lose_context`. Measured after: **27 plates, 2
-  contexts** — one probe, one layer.
+  handed straight back through `WEBGL_lose_context`. Measured after, on the same page:
+  **2 contexts** — one probe, one layer.
 - **Release the context on teardown.** `WebGLRenderer.dispose()` frees three's own
   resources but leaves the context to the collector, so `dispose()` also calls
   `forceContextLoss()`.
@@ -422,21 +448,24 @@ gone and the computed visibility is `hidden`.
 ### The inline canvas
 
 The canvas is painted before the stylesheets are. `<html>` carries an inline
-  `background` and `color-scheme: dark`, `app.html`'s script repaints both for a
-  light-theme visitor, and `theme-color` covers the browser chrome. Without that the
-  document has no background at all until the CSS lands, and the browser fills the gap
-  with its own canvas — which follows the *used* color-scheme, so it is white on a machine
-  set to light mode. Note this is a real gap but it is **not** the flash that gets
-  reported: what people actually saw was the WebGL layer losing its context, above. The
-  literals duplicate `--bg`: nothing can read a custom property that early. `ThemeToggle`
-  repaints the same surfaces on toggle, the meta included.
+`background` and `color-scheme: dark`; `app.html`'s script repaints both for a
+light-theme visitor, and `theme-color` covers the browser chrome. The colours come from
+`CANVAS` in `src/lib/utils/theme.ts`, written into `app.html` as `%theme.canvas.dark%`
+and `%theme.canvas.light%` and substituted at build time by `src/hooks.server.ts`, so
+there is one source rather than literals in two files. They nonetheless duplicate the
+`--bg` values: nothing can read a custom property that early. Without the inline paint
+the document has no background at all until the CSS lands, and the browser fills the gap
+with its own canvas — which follows the *used* color-scheme, so it is white on a machine
+set to light mode. Note this is a real gap but it is **not** the flash that gets
+reported: what people actually saw was the WebGL layer losing its context, above.
+`ThemeToggle` repaints the same surfaces on toggle, the meta included.
 
 ### The instrument pass
 
 A second register, drawn from the Death Stranding interface: amber, and the readouts that
 give the amber something to report.
 
-- **Amber is for what is live.** `--accent` marks the active set's marker, the masthead's
+- **Amber is for what is live.** `--accent` marks the active set's marker, the header's
   progress hairline, the pointer's index readout, the plate caption's hover rule, the
   focused element, the chapter card's rule, and the viewer's status and position. Body
   text, captions, set names, the EXIF keys and the footer stay monochrome. That restraint
@@ -445,28 +474,30 @@ give the amber something to report.
 - **One amber cannot serve both themes.** `#dc8d18` is 7.42:1 on the dark ground and
   2.36:1 on the light one — failing even the 3.0 bar for UI components. Light therefore
   uses `#8a4a0a` (6.06:1): same hue, different lightness. Measure before changing either.
-- **Two warm colours are one too many.** The blob's stops sat at hue 22 and 13 while the
-  accent is 35.8 — which read as two colours the moment the accent existed. They are now
-  36 and 31, so the light and the signal belong to one family.
-- **The readout face ships.** `--font-mono` is IBM Plex Mono (latin subset, 400 only,
-  14.7 KB of woff2) rather than a system stack, so a readout looks the same on every
-  machine instead of rendering as whatever the visitor's OS calls monospace. Captions are
-  capitalised with their units attached.
-- **Every number is real.** The viewer's `PLATE 07 / 27` is the position in the current
+- **The light and the signal are one colour.** Both blob stops are `#dc8d18` — the accent
+  itself — so the light belongs to the signal rather than merely sitting near it. They
+  once sat at hue 22 and 13 against an accent at 35.8, which read as two colours the
+  moment the accent existed.
+- **The readout face ships.** `--font-mono` is Sixtyfour, `--font-display` Audiowide and
+  `--font-sans` Prosto One, all through `@fontsource` rather than the visitor's system
+  stack, so a readout looks the same on every machine instead of rendering as whatever
+  the OS calls monospace. Captions are capitalised with their units attached.
+- **Every number is real.** The viewer's `PLATE 07 / 34` is the position in the current
   list; the panel's File row comes from the listing's own `size`; a chapter card's date is
   the set's most recent upload. An `<img>` reports no byte progress, so the viewer says
   `DECODING` and shows no percentage — there is nothing honest to build one from.
 - **Framing stays in the margin.** The viewer's brackets are inset by the layout's own
   padding and verified not to overlap the photograph. That is the line between an
   instrument and a drawing over somebody's work.
-- **The chapter card is additive.** Each set opens with a band carrying its number, name,
-  count and date, replaying on every entry by toggling a class — an animation only
-  restarts when it is re-applied. The sticky header still carries the same facts, so
-  nothing depends on the card rendering.
-- **Sticky set headers.** Each `.set__head` is sticky below the masthead and carries a
-  pinned state, reported by a one-pixel `.set__sentinel` above it: the browser has no
-  such state, so the sentinel's position carries it. Pinned, the header tightens and
-  firms up, the way the masthead does once you leave the top.
+- **The chapter card is additive, and its parts become the header.** Each set opens with a
+  band carrying its number, name, count and date, replaying on every entry by toggling a
+  class — an animation only restarts when it is re-applied. The sticky header carries the
+  same facts, so nothing depends on the card rendering.
+- **Sticky set headers.** Each `.set__head` is sticky below the site header and carries a
+  pinned state, reported by a one-pixel `.set__sentinel` above it: the browser has no such
+  state, so the sentinel's position carries it. Pinning measures the card's index, name and
+  count against the header's own slots and animates them across (`--dx`, `--dy`, `--ds`),
+  so the card reads as becoming the header; the header itself tightens and firms up.
 - **Placeholders.** The grid blurs up from the 24px LQIP. The viewer does **not**: at
   full size a 24px source is an unrecognisable wash, so it stands the grid's own 800px
   derivative in behind the photograph — already fetched by the grid, so usually decoded
@@ -476,13 +507,13 @@ give the amber something to report.
 
 ### The plate's note
 
-Every photograph carries a description from the listing, and it arrives on the plate
-itself after a dwell — `DWELL_MS` in `PhotoPlate.svelte`, two seconds.
+A photograph whose listing carries a `description` shows it on the plate itself after a
+dwell — `DWELL_MS` in `PhotoPlate.svelte`, 500 ms.
 
 - **Two ways to dwell, decided by the device.** Hover for anything with a pointer, and an
   `IntersectionObserver` at 0.65 visibility for anything without one; `(hover: hover) and
   (pointer: fine)` picks the branch, and the observer is not even constructed on a desktop.
-  Verified on a touch-emulated load: one 0.65 observer per plate, 27 of them.
+  Verified on a touch-emulated load: one 0.65 observer per plate.
 - **Keyboard skips the wait.** A visitor who has tabbed to a plate has already chosen it,
   so the note arrives at once. Its focus state is component state — `plate__media--focused`
   — because `:focus-visible` cannot be verified while the page is not the focused window,
@@ -602,11 +633,12 @@ for v in w2200 w1600 w800 lqip; do curl -s -o /dev/null -w "$v %{http_code}\n" \
   "https://assets.fahadfaruqi.com/d/$v/<name>.webp"; done
 ```
 
-In a browser, what "the gallery works" means: 27 `figure` elements across 3 sets, the
-grid images loading from `d/w800`, the backdrop blob present behind the content, two
-grain layers in the overlay, and clicking a plate opening the viewer with its EXIF
-panel populated. `metadata-api/AGENTS.md` lists the Worker's own matrix (GET, HEAD,
-OPTIONS, trailing slash, 404s, CORS on errors).
+In a browser, what "the gallery works" means: one `figure` per object in the listing
+(34 across 4 sets at the time of writing), the grid images loading from `d/w800` with
+their `d/lqip` placeholders, both blob layers and the noise field behind the content,
+the header's tabs and the set index both responding, and clicking a plate opening the
+viewer with its EXIF panel populated. `metadata-api/AGENTS.md` lists the Worker's own
+matrix (GET, HEAD, OPTIONS, trailing slash, 404s, CORS on errors).
 
 ### Pitfalls when verifying in a headless or background tab
 
@@ -620,8 +652,8 @@ OPTIONS, trailing slash, 404s, CORS on errors).
   (`Emulation.setDeviceMetricsOverride`) or you will conclude the offset grid is
   broken when it is not.
 - Screenshots come back as JPEG. Fine grain does not survive the compression, so do
-  not judge grain visibility from one; read the computed opacity and blend mode of
-  `.grain--coarse` instead.
+  not judge grain visibility from one; read `--grain-opacity` on `:root` and the
+  `mix-blend-mode` of `.noise` instead.
 - **A hidden window produces no frames at all.** If the OS window is backgrounded,
   every tab reports `visibilityState: "hidden"` and `requestAnimationFrame` never
   fires — so the WebGL layer never draws, `data-gl` never appears and the plates
@@ -665,13 +697,14 @@ OPTIONS, trailing slash, 404s, CORS on errors).
 ## Leftovers and open items
 
 - `package.json` still carries dependencies from the original scaffold that nothing
-  imports: `three`, `@types/three`, `threlte`, `svelte-lightbox`, `svelte-bricks`,
-  `@humanspeak/svelte-motion`. They are dead weight — several MB of install — and were
-  left in place rather than removed unasked. `postcss`/`autoprefixer` are still used by
-  `postcss.config.js`; keep those.
+  imports: `threlte`, `svelte-lightbox`, `svelte-bricks`, `@humanspeak/svelte-motion`.
+  They are dead weight — several MB of install — and were left in place rather than
+  removed unasked. `three` and `@types/three` were on that list too and are now the
+  WebGL layer's; `postcss`/`autoprefixer` are still used by `postcss.config.js`; keep
+  those.
 - `static/.assetsignore` is a leftover from the abandoned `adapter-cloudflare` setup
   (it lists `_worker.js` and `_routes.json`). Harmless, but meaningless now.
-- The listing cache means a freshly uploaded photograph may take up to 7 days to
+- The listing cache means a freshly uploaded photograph may take up to 10 minutes to
   appear. Redeploying the Worker is the quick way to force it.
 - `https_enforced` is false on the Pages site, so plain `http://art.fahadfaruqi.com`
   is not redirected to HTTPS. It is a one-line API change if that is wanted.

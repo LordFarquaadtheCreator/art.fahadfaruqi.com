@@ -54,26 +54,29 @@ list results unless they are requested explicitly. Dropping that option silently
 degrades every response to the five generated fields.
 
 Objects under the `d/` prefix are skipped: they are resized derivatives of the
-originals (see the "Derivatives" section below), not gallery items.
+originals (see the "Derivatives" section below), not gallery items. Keys under `www/`
+are skipped as well — they belong to fahadfaruqi.com, which shares the bucket.
 
 ## Derivatives
 
-The originals in the bucket are full-resolution PNGs (110–140 MB each) and are not
-usable as gallery media. Every original is accompanied by three resized WebP
-derivatives, generated offline and uploaded to the same bucket:
+The originals in the bucket are 6016×4016 WebP at quality 85, 1–8 MB each — they were
+PNGs of 110–140 MB until they were re-encoded in place with their metadata carried
+over — and nothing in the app loads them. Every original is accompanied by four resized
+WebP derivatives, generated offline and uploaded to the same bucket:
 
 | Key | Width | Purpose |
 | --- | --- | --- |
-| `d/w2200/<name>.webp` | 2200 px | lightbox / hero image |
+| `d/w2200/<name>.webp` | 2200 px | lightbox / viewer image |
+| `d/w1600/<name>.webp` | 1600 px | the 1600w `srcset` candidate — 2× displays and the WebGL quads |
 | `d/w800/<name>.webp` | 800 px | gallery grid cell |
 | `d/lqip/<name>.webp` | 24 px | blur-up placeholder, also carries the aspect ratio |
 
 The frontend builds those keys from the original's key (`src/lib/utils/variants.ts`),
 so the naming convention is the contract between whatever generates the derivatives
 and the site. Regenerating derivatives for a newly uploaded original means uploading
-the three keys above with `Content-Type: image/webp` and a long-lived
-`Cache-Control`; anything for the gallery itself needs the original uploaded with
-its `title`, `altText`, `description`, `set` and `number` metadata intact.
+the four keys above with `Content-Type: image/webp` and a long-lived `Cache-Control`;
+anything for the gallery itself needs the original uploaded with its `title`, `altText`,
+`description`, `set` and `number` metadata intact.
 
 ## Deploy
 
@@ -108,20 +111,25 @@ production.
 
 ## Upload images with metadata
 
-Attach custom metadata at upload time with `x-amz-meta-*` headers:
+Attach custom metadata at upload time with `wrangler r2 object put`'s own flags:
 
 ```sh
-wrangler r2 object put assets/paintings/sunset.jpg \
-  --file=./sunset.jpg \
-  --header="x-amz-meta-title:Sunset Over the Ocean" \
-  --header="x-amz-meta-medium:Oil on Canvas" \
-  --header="x-amz-meta-year:2024" \
-  --header="x-amz-meta-description:A vibrant sunset over the Atlantic"
+npx wrangler r2 object put assets/paintings/sunset.jpg \
+  --file=./sunset.jpg --remote \
+  --content-type=image/webp \
+  --cache-control='public, max-age=31536000, immutable' \
+  --header='x-amz-meta-title:Sunset Over the Ocean' \
+  --header='x-amz-meta-description:A vibrant sunset over the Atlantic'
 ```
 
-Each header becomes a field on that object in the API response. Avoid the
+Each metadata header becomes a field on that object in the API response. Avoid the
 reserved names `url`, `key`, `size`, `uploaded`, and `etag`; metadata using those
 overwrites the generated values.
+
+The gallery expects `set`, `number`, `title`, `alttext` and `description`; EXIF the
+camera wrote rides along with them. `scripts/manage-images` (see `scripts/README.md`)
+is the supported path, because it extracts the EXIF and carries an object's metadata
+across a re-encode — which raw `put` does not.
 
 ## Fetch on the site
 
@@ -168,15 +176,15 @@ A hit returns at `match()` and the rest never runs.
 
 | Layer | TTL |
 | --- | --- |
-| Workers cache (per data center) | 7 days |
-| Browser | 1 day |
+| Workers cache (per data center) | 10 minutes |
+| Browser | 10 minutes |
 
-The response is cached for 7 days, keyed on the request URL. New uploads will not
+The response is cached for 10 minutes, keyed on the request URL. New uploads will not
 show up until that entry expires or the Worker is redeployed. To see fresh data
 immediately, add a query param (`?v=2`); it is part of the cache key, so it misses
 the old entry.
 
-Two things worth knowing about that 7 days:
+Two things worth knowing about that 10 minutes:
 
 - It is the stored response's TTL, taken from the `s-maxage` directive. `max-age`
 covers the browser's copy.
