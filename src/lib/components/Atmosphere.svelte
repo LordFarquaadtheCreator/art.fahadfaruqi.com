@@ -261,13 +261,17 @@
 
 	.noise {
 		position: absolute;
-		inset: 0;
+		inset: -24px; /* room to jitter without exposing an edge */
 		background-image:
 			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.4' intercept='-0.2'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
 			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
 		background-size: 180px 180px, 120px 120px;
 		opacity: var(--grain-opacity);
 		mix-blend-mode: var(--grain-blend);
+		will-change: transform, opacity;
+		animation:
+			noise-jitter 2.5s steps(1) infinite,
+			noise-flicker 1s steps(3) infinite alternate;
 	}
 
 	.vignette {
@@ -293,6 +297,39 @@
 
 	:global(html[data-theme='light']) .vignette--light {
 		opacity: 1;
+	}
+
+	/* The grain boils rather than slides: a stepped jitter, so the field stays where it is and only
+	   its phase moves, plus a shallow density flicker. Both are CSS, so the reduced-motion rule
+	   flattens them onto the base style — a still field. */
+	@keyframes noise-jitter {
+		0% {
+			transform: translate3d(0, 0, 0);
+		}
+		20% {
+			transform: translate3d(-6px, 4px, 0);
+		}
+		40% {
+			transform: translate3d(4px, -5px, 0);
+		}
+		60% {
+			transform: translate3d(-4px, -3px, 0);
+		}
+		80% {
+			transform: translate3d(5px, 2px, 0);
+		}
+		100% {
+			transform: translate3d(0, 0, 0);
+		}
+	}
+
+	@keyframes noise-flicker {
+		from {
+			opacity: calc(var(--grain-opacity) * 0.85);
+		}
+		to {
+			opacity: calc(var(--grain-opacity) * 1.15);
+		}
 	}
 
 </style>
