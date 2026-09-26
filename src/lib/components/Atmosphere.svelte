@@ -256,10 +256,7 @@
 		opacity: var(--blob-fade, 1);
 	}
 
-	/* The lattice the light reveals. One fixed layer for the whole page — never scaled or moved
-	   with a blob, so the lines stay a property of the screen. It sits above the blobs and
-	   inverts what they do to the ground — multiply where the light screens, screen where it
-	   multiplies — so the lines cut into the glow and barely register on the empty ground. */
+	/* Background mesh */
 	.mesh {
 		position: absolute;
 		inset: 0;
@@ -272,9 +269,6 @@
 		mix-blend-mode: var(--mesh-blend);
 	}
 
-	/* The noise, on the light only: masked with the light's own falloff and blended inside the
-	   frame, so it works on the light rather than over the page. The coarse texture sits on top;
-	   the fine one's features are sub-pixel, so it reads as a haze underneath. */
 	.blob-base__noise,
 	.blob-stretch__noise {
 		background-image:

@@ -18,7 +18,7 @@
 	--line: rgba(242, 241, 238, 0.13);
 	--line-2: rgba(242, 241, 238, 0.34);
 	--scrim: rgba(8, 8, 8, 0.97);
-	--grain-opacity: 0.1;
+	--grain-opacity: 0.5;
 	--grain-blend: screen;
 	--glow-opacity: 0.68;
 	--glow-blend: screen;
