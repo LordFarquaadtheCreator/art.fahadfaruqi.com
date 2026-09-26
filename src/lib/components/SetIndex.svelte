@@ -25,7 +25,7 @@
 		onclick={() => onSelect('all')}
 		use:navLine
 	>
-		All <span class="index__count num" use:count={total}></span>
+		All <span class="index__count" use:count={total}></span>
 	</button>
 
 	{#each sets as set (set.slug)}
@@ -36,7 +36,7 @@
 			onclick={() => onSelect(set.slug)}
 			use:navLine
 		>
-			{set.name} <span class="index__count num" use:count={set.photos.length}></span>
+			{set.name} <span class="index__count" use:count={set.photos.length}></span>
 		</button>
 	{/each}
     </nav>
