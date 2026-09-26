@@ -503,11 +503,26 @@ comes from, an indeterminate amber hairline, and four `--bg-elev` frames holding
 grid's place.
 
 - **Nothing is invented.** The frames are empty on purpose — no placeholder metadata, no
-  photograph — and the hairline travels instead of filling, because the API reports no
-  progress to fill with.
-- **It swaps instantly, with no transition.** An outro would hold the band in flow while
-  the grid mounted beneath it, so the page would jump when it collapsed. The grid's own
-  staggered reveals carry the arrival instead.
+  photograph. The hairline travels rather than fills while the wait lasts, and when the read
+  lands it is drawn once across the full width: the read is over, no percentage is claimed.
+- **It hands over; it is not cut.** The panel being replaced keeps its node, takes
+  `class:leaving` in the same flush that the next state takes the room, and leaves the flow in
+  that frame — so no frame paints it in flow beside the arriving grid, and nothing below it
+  moves. Its parts then leave in the order they were there for: the hairline drawn once, the
+  report put away, the frames folded to their top edge, the panel clear and dropped by
+  `DISSOLVE_MS`. It is `inert` and `pointer-events: none`, so the gallery beneath is live from
+  the first frame, and reduced motion gets no ghost at all. Svelte's own `transition:` cannot
+  do this job — an outro's keyframes are applied only after its dummy animation's finish
+  event, so the outgoing element stays in flow for a frame or two, which is the jump this
+  exists to avoid.
+- **The band reports; it does not decorate.** Its readout is the state of the read
+  (`Receiving index` / `Index received` / `Index unavailable`), and the dot holds instead
+  of pulsing once there is nothing left to wait on. What the read returned belongs to the
+  hero's line, which counts it out as the band leaves.
+- **The layer draws over the departure.** The plate canvas is fixed at z-index 4, above
+  everything inside `main` (z-index 1), so in WebGL mode arriving plates composite over the
+  band wherever they overlap. The strip and the hairline sit in the margin above the grid,
+  which is where the departure is read.
 - **It is announced, not just drawn:** `role="status"` and `aria-live="polite"`.
 
 ## Deployment
@@ -553,15 +568,16 @@ the message `Not Found`, which is what `src/routes/+error.svelte` reads. A prere
 page would not do: it hydrates against the route it was built for, not against the
 address it is served at.
 
-Because `page.url` is the address that was asked for, `ErrorPage.svelte` can print it: the
-readout line at the foot of the page carries the status and the address that missed, which
-is the only place the visitor can see that, and the only clue to which link is broken.
+Because `page.url` is the address that was asked for, `ErrorPage.svelte` can name it: the
+404's subtitle is the address that missed, with the status as the display type above it,
+which is the only place the visitor can see that, and the only clue to which link is broken.
 
 The cost of the fallback is that the 404's markup arrives with the bundle rather than in
 the file — it is the one page on the site that is empty without script. Everything about
-how it looks is still the site's own, because `ErrorPage.svelte` reads the tokens in
-`src/app.css` and mounts `Atmosphere.svelte` on top, rather than carrying a second copy
-of the palette the way the old `static/404.html` did. Verify both halves from production:
+how it looks is still the site's own, because the error page renders inside the same
+layout: `ErrorPage.svelte` draws with the tokens in `src/app.css`, and the `Atmosphere`
+layers are already mounted around it, rather than the second copy of the palette the old
+`static/404.html` carried. Verify both halves from production:
 
 ```sh
 curl -s -o /dev/null -w "%{http_code}\n" https://art.fahadfaruqi.com/no-such-path   # 404
