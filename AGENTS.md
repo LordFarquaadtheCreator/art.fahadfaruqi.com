@@ -89,11 +89,12 @@ bun run preview    # serve build/
 ```
 
 `.env` (gitignored, so absent in CI) may set `VITE_METADATA_API` and
-`VITE_CDN_BASE`. When they are unset — which is the case for every CI build — the
-code uses the production URLs compiled in at `src/lib/utils/metadata.ts` and
-`src/lib/utils/variants.ts`. **Changing the API host therefore means editing those
-defaults too**, not just `.env`; a local-only change to `.env` will not reach the
-deployed site.
+`VITE_CDN_BASE`, which **builds** read. `vite dev` does not: it always talks to the dev
+server, whose proxy makes every read fresh (below). When the variables are unset — the
+case for every CI build — the code uses the production URLs compiled in at
+`src/lib/utils/metadata.ts` and `src/lib/utils/variants.ts`. **Changing the API host
+therefore means editing those defaults too**, not just `.env`; a local-only change to
+`.env` will not reach the deployed site.
 
 ### Pitfall: `vite preview` caches its file index
 
@@ -113,6 +114,26 @@ f=$(grep -o '_app/immutable/nodes/[^"]*\.js' build/index.html | tail -1)
 shasum -a 256 < "build/$f"                      # on disk
 curl -s "http://localhost:4173/$f" | shasum -a 256   # what the server returns
 ```
+
+### The dev proxy: no cache in `vite dev`
+
+`vite dev` is the one mode where every read is fresh. The app asks its own origin —
+`/cdn/...` and `/api/metadata`, from the `import.meta.env.DEV` branches in
+`src/lib/utils/variants.ts` and `src/lib/utils/metadata.ts` — and `server.proxy` in
+`vite.config.ts` forwards to `assets.fahadfaruqi.com`. Two layers need defeating, and
+they take different levers:
+
+- The Worker's cache entry and any edge copy of an object are keyed on the full
+  upstream URL, so the proxy adds a fresh `?cb=` per upstream request — the same
+  buster the derivative generator and manual debugging use.
+- The browser keys on the clean URL the app asked for, which that query never reaches,
+  so the proxy rewrites `Cache-Control: no-store` onto the response.
+
+Consequences: a missing derivative still fails exactly as before — the proxy does not
+invent objects. And the bucket's CORS behaviour, which the WebGL layer depends on, is
+not exercised at all in dev, because nothing is cross-origin anymore. `bun run build
+&& bun run preview` is the faithful local check for the deployed path; the build reads
+the `.env` hosts, so preview runs against the real origins.
 
 ## The metadata contract
 

@@ -2,7 +2,12 @@
 // bucket under a `d/` prefix that the metadata API filters out of its listing, so
 // the naming convention below is the contract between the generator and this app.
 
-const CDN_BASE = import.meta.env.VITE_CDN_BASE ?? 'https://assets.fahadfaruqi.com';
+// Dev always talks to the dev server: the proxy in vite.config.ts fetches every
+// derivative uncached. VITE_CDN_BASE is read by builds; `vite build && vite preview`
+// is how the deployed path, origins and CORS included, is checked locally.
+const CDN_BASE = import.meta.env.DEV
+	? '/cdn'
+	: (import.meta.env.VITE_CDN_BASE ?? 'https://assets.fahadfaruqi.com');
 
 export type Variant = 'display' | 'wide' | 'grid' | 'lqip';
 

@@ -34,8 +34,10 @@ bun run build      # static build into build/
 bun run preview    # serve the build
 ```
 
-`.env` (gitignored) may override `VITE_METADATA_API` and `VITE_CDN_BASE`; when unset,
-the production URLs are used, which is what CI does.
+`.env` (gitignored) may override `VITE_METADATA_API` and `VITE_CDN_BASE` for builds;
+when unset, the production URLs are used, which is what CI does. `bun run dev` ignores
+both and reads through the dev server, whose proxy fetches everything uncached — a
+photograph uploaded a minute ago is in the next reload, not in ten minutes.
 
 ## Images and metadata
 

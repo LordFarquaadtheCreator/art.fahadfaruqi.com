@@ -1,8 +1,11 @@
 import { formatExif, type Exif, type RawExif } from './exif';
 import { derivativeUrl } from './variants';
 
-const METADATA_API =
-	import.meta.env.VITE_METADATA_API ?? 'https://assets.fahadfaruqi.com/api/metadata';
+// Dev reads the listing through the dev server's proxy, so a fresh upload is in the
+// next reload rather than in ten minutes. VITE_METADATA_API is read by builds.
+const METADATA_API = import.meta.env.DEV
+	? '/api/metadata'
+	: (import.meta.env.VITE_METADATA_API ?? 'https://assets.fahadfaruqi.com/api/metadata');
 
 /** The shape the metadata API returns: generated fields plus the object's custom metadata. */
 interface ApiObject extends RawExif {
