@@ -20,8 +20,3 @@ vite.config.ts.timestamp-*
 !.dev.vars.example
 .env*
 !.env.example
-
-# Local credentials / build artifacts (never commit)
-scripts/config.yaml
-scripts/manage-images
-
