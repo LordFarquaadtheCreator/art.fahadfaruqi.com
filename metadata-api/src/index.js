@@ -2,16 +2,13 @@
 // Serves at: https://assets.fahadfaruqi.com/api/metadata
 // R2 serves images directly at: https://assets.fahadfaruqi.com/<key>
 
-const EDGE_CACHE_TTL = 604800; // 7 days in seconds
-const BROWSER_CACHE_TTL = 86400; // 1 day in seconds
+const EDGE_CACHE_TTL = 1800; // 30 minutes in seconds
+const BROWSER_CACHE_TTL = 600; // 10 minutes in seconds
 const PREFLIGHT_MAX_AGE = 86400; // 1 day in seconds
 const PAGE_SIZE = 1000; // R2 list page size
 const MAX_OBJECTS = 10000; // refuse to build a partial listing past this
 const ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 const CDN_BASE = "https://assets.fahadfaruqi.com";
-// Keys under these prefixes are not gallery items: d/ holds this site's generated
-// derivatives, www/ belongs to the other site sharing the bucket (fahadfaruqi.com).
-// Anything else in the bucket is treated as an original.
 const IGNORED_PREFIXES = ["d/", "www/"];
 
 const CORS_HEADERS = {
