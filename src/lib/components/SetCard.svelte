@@ -160,7 +160,7 @@
 		<span class="label  card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
 		<h3 class="card__name title medium" bind:this={cardName}>{set.name}</h3>
 		<span class="label  card__meta" bind:this={cardCount}>
-			{set.photos.length} photos &middot; {latest(set.photos)}
+			{set.photos.length} photographs &middot; {latest(set.photos)}
 		</span>
 	</div>
 	<span class="card__rule"></span>

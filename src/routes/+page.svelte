@@ -16,9 +16,9 @@
 
 	// What the band reports: the state of the fetch, never a number — the count is the hero's.
 	const READOUT: Record<Status, string> = {
-		loading: 'Fetching photos',
-		ready: 'Photos received',
-		error: 'Could not load photos'
+		loading: 'Fetching photographs',
+		ready: 'Photographs received',
+		error: 'Could not load photographs'
 	};
 
 	let photos = $state<Photo[]>([]);

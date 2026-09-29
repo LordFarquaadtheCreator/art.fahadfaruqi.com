@@ -26,9 +26,9 @@
 			{#if status === 'ready'}
 				<span use:count={photoCount}></span> photographs &middot; {setCount} sets
 			{:else if status === 'loading'}
-				Loading photos
+				Loading photographs
 			{:else}
-				Photos unavailable
+				Photographs unavailable
 			{/if}
 		</p>
 	</div>

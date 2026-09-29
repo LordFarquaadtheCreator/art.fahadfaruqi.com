@@ -6,7 +6,7 @@
 	let { scrolled, progress }: { scrolled: boolean; progress: number } = $props();
 
 	const tabs = [
-		{ href: '/', label: 'Photos' },
+		{ href: '/', label: 'Photographs' },
 		{ href: '/about', label: 'About' }
 	];
 
