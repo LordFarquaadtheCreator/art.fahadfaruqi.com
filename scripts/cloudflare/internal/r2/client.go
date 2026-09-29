@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
 	appconfig "manage-images/internal/config"
-	"manage-images/internal/exif"
 )
 
 type Client struct {
@@ -92,6 +91,8 @@ func ContentTypeFor(key string) (string, error) {
 		return "image/png", nil
 	case ".webp":
 		return "image/webp", nil
+	case ".avif":
+		return "image/avif", nil
 	default:
 		return "", fmt.Errorf("unsupported file type: %s", filepath.Ext(key))
 	}
@@ -184,8 +185,11 @@ func (c *Client) Delete(key string) error {
 	return nil
 }
 
-func (c *Client) Upload(filePath string, metadata *exif.Metadata) error {
-	if err := metadata.Validate(); err != nil {
+// Upload writes a local file under key, with the cache policy its tier carries
+// and the custom metadata the caller has already assembled.
+func (c *Client) Upload(key, filePath string, metadata map[string]string, cacheControl string) error {
+	contentType, err := ContentTypeFor(key)
+	if err != nil {
 		return err
 	}
 
@@ -194,22 +198,19 @@ func (c *Client) Upload(filePath string, metadata *exif.Metadata) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	key := filepath.Base(filePath)
-
-	contentType, err := ContentTypeFor(filePath)
+	_, err = c.s3.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:       &c.bucket,
+		Key:          &key,
+		Body:         bytes.NewReader(data),
+		ContentType:  aws.String(contentType),
+		CacheControl: aws.String(cacheControl),
+		Metadata:     metadata,
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to upload %s: %w", key, err)
 	}
 
-	_, err = c.s3.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket:      &c.bucket,
-		Key:         &key,
-		Body:        bytes.NewReader(data),
-		ContentType: aws.String(contentType),
-		Metadata:    metadata.Map(),
-	})
-
-	return err
+	return nil
 }
 
 // copySource builds the x-amz-copy-source value, escaping each path segment so
