@@ -120,8 +120,8 @@ curl -s "http://localhost:4173/$f" | shasum -a 256   # what the server returns
 `vite dev` is the one mode where every read is fresh. The app asks its own origin —
 `/cdn/...` and `/api/metadata`, from the `import.meta.env.DEV` branches in
 `src/lib/utils/media.ts` and `src/lib/utils/metadata.ts` — and `server.proxy` in
-`vite.config.ts` forwards to `assets.fahadfaruqi.com`. Two layers need defeating, and
-they take different levers:
+`vite.config.ts` forwards to `assets.fahadfaruqi.com`. Two cache layers need
+defeating, and each needs its own fix:
 
 - The Worker's cache entry and any edge copy of an object are keyed on the full
   upstream URL, so the proxy adds a fresh `?cb=` per upstream request — the same
@@ -195,8 +195,8 @@ every display size, and the plate takes its shape from the listing's dimensions.
 The encoder is `ffmpeg -c:v libsvtav1 -crf 22 -preset 6 -frames:v 1`, run by
 `manage-images create` on upload, which writes both objects in one command
 (`scripts/README.md` has the flags). It refuses to upload anything when `ffmpeg` or
-`ffprobe` is missing, so a master cannot land without its sibling. **crf** is the knob,
-not preset — a slower preset buys bytes by spending quality: preset 4 at crf22 measured
+`ffprobe` is missing, so a master cannot land without its sibling. **crf** is the setting
+that matters, not preset — a slower preset saves bytes by losing quality: preset 4 at crf22 measured
 SSIM-Y 0.9728 against preset 6's 0.9762 on the same image.
 
 A missing compressed copy is not a broken image — the Worker falls back to the master,
@@ -407,14 +407,14 @@ Codrops (2025). What that means in code:
   In the single-column layout, `max-width: calc(var(--ratio) * 74vh)` stops a portrait
   from being several screens tall.
 - **One way to filter, one way to navigate.** The masthead (`Header.svelte`) carries the
-  site's tabs — Photos and About — and `ThemeToggle`; the set filter (`SetIndex.svelte`)
+  site's tabs — Photographs and About — and `ThemeToggle`; the set filter (`SetIndex.svelte`)
   sits between the hero and the grid and is the only control for the sets. The hero used
   to carry a second, larger copy of the same list — a set table with counts and dates —
   and it was removed: two controls doing the same job made the top of the page read as a
   contents page rather than as a photograph. The hero is the name and the meta grid (the
   three credit lines and the count), then the band, then the work. The count line reports
-  the fetch: `Loading photos` while it is out, the count once it lands, `Photos
-  unavailable` if it fails.
+  the fetch: `Loading photographs` while it is out, the count once it lands,
+  `Photographs unavailable` if it fails.
 - **Layers.** `Atmosphere.svelte` renders two fixed layers: `.backdrop` (z-index 0)
   holding the two blob layers, the two vignettes, the noise field and the mesh, and
   `.overlay` (z-index 6) holding the pointer's index readout. The light is a source
@@ -508,7 +508,7 @@ give the amber something to report.
   `--font-sans` Prosto One, all through `@fontsource` rather than the visitor's system
   stack, so a readout looks the same on every machine instead of rendering as whatever
   the OS calls monospace. Captions are capitalised with their units attached.
-- **Every number is real.** The viewer's `PLATE 07 / 34` is the position in the current
+- **Every number is real.** The viewer's `PHOTO 07 / 34` is the position in the current
   list; the panel's File row comes from the listing's own `size`; a chapter card's date is
   the set's most recent upload. An `<img>` reports no byte progress, so the viewer says
   `DECODING` and shows no percentage — there is nothing honest to build one from.
@@ -572,10 +572,10 @@ grid's place.
   do this job — an outro's keyframes are applied only after its dummy animation's finish
   event, so the outgoing element stays in flow for a frame or two, which is the jump this
   exists to avoid.
-- **The band reports; it does not decorate.** Its readout is the state of the read
-  (`Receiving index` / `Index received` / `Index unavailable`), and the dot holds instead
-  of pulsing once there is nothing left to wait on. What the read returned belongs to the
-  hero's line, which counts it out as the band leaves.
+- **The band reports; it does not decorate.** Its readout is the state of the fetch
+  (`Fetching photographs` / `Photographs received` / `Could not load photographs`), and the
+  dot holds instead of pulsing once there is nothing left to wait on. What the fetch
+  returned belongs to the hero's line, which counts it out as the band leaves.
 - **A read that fails is the error page.** The index is read in the browser, so its failure
   belongs to the page: the failure view draws the same `ErrorPage` the router uses, with
   `status = 500`, the reason in the readout register and another attempt as the action. It
