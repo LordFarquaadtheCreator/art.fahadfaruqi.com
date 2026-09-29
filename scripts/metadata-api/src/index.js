@@ -9,7 +9,9 @@ const PAGE_SIZE = 1000; // R2 list page size
 const MAX_OBJECTS = 10000; // refuse to build a partial listing past this
 const ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 const CDN_BASE = "https://assets.fahadfaruqi.com";
-const IGNORED_PREFIXES = ["d/", "www/"];
+const ART_PREFIX = "art/";
+const MASTER_PREFIX = "art/master/";
+const COMPRESSED_PREFIX = "art/compressed/";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -105,38 +107,72 @@ async function handleMetadataRequest(request, env, ctx) {
   return response;
 }
 
+function stemOf(key, prefix) {
+  return key.slice(prefix.length).replace(/\.[^./]+$/, "");
+}
+
+function num(value) {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function listAllObjects(env) {
-  const objects = [];
+  const masters = new Map();
+  const compressed = new Map();
   let cursor;
+  let seen = 0;
   do {
     // Custom and HTTP metadata are omitted from list results unless requested
     // explicitly; without `include` the API would return five bare fields per object.
     const listing = await env.ASSETS_BUCKET.list({
       cursor,
       limit: PAGE_SIZE,
+      prefix: ART_PREFIX,
       include: ["customMetadata", "httpMetadata"],
     });
     for (const obj of listing.objects) {
-      // Derivative and other-site objects are not gallery items and must not
-      // appear in the listing.
-      if (IGNORED_PREFIXES.some((prefix) => obj.key.startsWith(prefix))) continue;
-      if (objects.length >= MAX_OBJECTS) {
+      seen += 1;
+      if (seen > MAX_OBJECTS) {
         // Fail loudly rather than serve a silently incomplete gallery.
         throw new Error(
-          `bucket holds more than MAX_OBJECTS (${MAX_OBJECTS}); refusing to build a partial listing`,
+          `bucket holds more than MAX_OBJECTS (${MAX_OBJECTS}) under ${ART_PREFIX}; refusing to build a partial listing`,
         );
       }
-      objects.push({
-        url: `${CDN_BASE}/${obj.key}`,
-        key: obj.key,
-        size: obj.size,
-        uploaded: obj.uploaded.toISOString(),
-        etag: obj.etag,
-        ...obj.customMetadata,
-      });
+      if (obj.key.startsWith(MASTER_PREFIX)) {
+        masters.set(stemOf(obj.key, MASTER_PREFIX), obj);
+      } else if (obj.key.startsWith(COMPRESSED_PREFIX)) {
+        compressed.set(stemOf(obj.key, COMPRESSED_PREFIX), obj);
+      }
     }
     cursor = listing.truncated ? listing.cursor : null;
   } while (cursor);
+
+  const objects = [];
+  const stems = [...new Set([...masters.keys(), ...compressed.keys()])].sort();
+
+  for (const stem of stems) {
+    const master = masters.get(stem);
+    const comp = compressed.get(stem);
+    const primary = master ?? comp;
+    const curated = primary.customMetadata ?? {};
+    const dims = (comp ?? master).customMetadata ?? {};
+
+    objects.push({
+      // The shape the deployed client reads: `key`, `url` and `size` name the master.
+      url: master ? `${CDN_BASE}/${master.key}` : `${CDN_BASE}/${comp.key}`,
+      key: `${stem}.webp`,
+      size: master ? master.size : comp.size,
+      etag: primary.etag,
+      master_url: master ? `${CDN_BASE}/${master.key}` : null,
+      master_size: master ? master.size : null,
+      compressed_url: comp ? `${CDN_BASE}/${comp.key}` : null,
+      compressed_size: comp ? comp.size : null,
+      ...curated,
+      uploaded: curated.uploaded ?? primary.uploaded.toISOString(),
+      width: num(dims.width) ?? null,
+      height: num(dims.height) ?? null,
+    });
+  }
 
   return objects;
 }

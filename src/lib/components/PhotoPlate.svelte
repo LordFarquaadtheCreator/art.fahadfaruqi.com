@@ -7,13 +7,24 @@
 	let { photo, onOpen }: { photo: Photo; onOpen: (photo: Photo) => void } = $props();
 
 	let loaded = $state(false);
-	let ratio = $state<number | null>(null);
+
+	// From the listing, so the frame holds its shape before the image arrives.
+	const metaRatio = $derived(
+		photo.width > 0 && photo.height > 0 ? photo.width / photo.height : null
+	);
+	let measuredRatio = $state<number | null>(null);
+	const ratio = $derived(metaRatio ?? measuredRatio);
 
 	const DWELL_MS = 500;
+	const WARM_MS = 300;
 
 	let revealed = $state(false);
 	let focused = $state(false);
 	let timer: ReturnType<typeof setTimeout> | null = null;
+
+	// The master is megabytes; it is fetched only once a pointer settles here.
+	let masterWarmed = false;
+	let warmTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const canHover =
 		typeof window !== 'undefined' &&
@@ -37,7 +48,33 @@
 		revealed = false;
 	}
 
-	$effect(() => stopTimer);
+	function warmMaster() {
+		if (masterWarmed) return;
+		masterWarmed = true;
+		const image = new Image();
+		image.decoding = 'async';
+		image.src = photo.master;
+	}
+
+	function warmSoon() {
+		if (masterWarmed || warmTimer !== null) return;
+		warmTimer = setTimeout(() => {
+			warmTimer = null;
+			warmMaster();
+		}, WARM_MS);
+	}
+
+	function cancelWarm() {
+		if (warmTimer !== null) {
+			clearTimeout(warmTimer);
+			warmTimer = null;
+		}
+	}
+
+	$effect(() => () => {
+		stopTimer();
+		cancelWarm();
+	});
 
 	function dwellWhileVisible(node: HTMLElement) {
 		if (canHover || typeof IntersectionObserver === 'undefined') return;
@@ -68,10 +105,11 @@
 		cursor.active = false;
 	}
 
-	function captureRatio(event: Event) {
+	function measureRatio(event: Event) {
+		if (ratio !== null) return;
 		const image = event.currentTarget as HTMLImageElement;
 		if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-			ratio = image.naturalWidth / image.naturalHeight;
+			measuredRatio = image.naturalWidth / image.naturalHeight;
 		}
 	}
 
@@ -98,40 +136,39 @@
 			}}
 			onpointerenter={(event) => {
 				carryIndex();
-				if (canHover && event.pointerType === 'mouse') arm();
+				if (canHover && event.pointerType === 'mouse') {
+					arm();
+					warmSoon();
+				}
 			}}
 			onpointerleave={() => {
 				dropIndex();
 				disarm();
+				cancelWarm();
 			}}
 			onfocus={() => {
 				focused = true;
 				carryIndex();
 				arm(0);
+				warmMaster();
 			}}
 			onblur={() => {
 				focused = false;
 				dropIndex();
 				disarm();
+				cancelWarm();
 			}}
 		>
 			<img
-				class="plate__lqip"
-				src={photo.lqip}
-				alt=""
-				aria-hidden="true"
-				decoding="async"
-				onload={captureRatio}
-			/>
-			<img
 				class="plate__image"
-				src={photo.grid}
-				srcset="{photo.grid} 800w, {photo.wide} 1600w, {photo.display} 2200w"
-				sizes="(min-width: 1024px) 55vw, 100vw"
+				src={photo.compressed}
 				alt={photo.alt}
 				loading="lazy"
 				decoding="async"
-				onload={() => (loaded = true)}
+				onload={(event) => {
+					loaded = true;
+					measureRatio(event);
+				}}
 			/>
 		</button>
 
@@ -169,21 +206,12 @@
 		background: var(--bg-elev);
 	}
 
-	.plate__lqip,
 	.plate__image {
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-	}
-
-	.plate__lqip {
-		filter: blur(14px);
-		transform: scale(1.08);
-	}
-
-	.plate__image {
 		opacity: 0;
 		transition:
 			opacity 0.7s ease,

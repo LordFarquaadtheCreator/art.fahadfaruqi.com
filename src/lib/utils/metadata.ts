@@ -1,5 +1,5 @@
 import { formatExif, type Exif, type RawExif } from './exif';
-import { derivativeUrl } from './variants';
+import { mediaUrl } from './media';
 
 // Dev reads the listing through the dev server's proxy, so a fresh upload is in the
 // next reload rather than in ten minutes. VITE_METADATA_API is read by builds.
@@ -14,6 +14,12 @@ interface ApiObject extends RawExif {
 	size: number;
 	uploaded: string;
 	etag?: string;
+	master_url?: string | null;
+	master_size?: number | null;
+	compressed_url?: string | null;
+	compressed_size?: number | null;
+	width?: number | null;
+	height?: number | null;
 	title?: string;
 	alttext?: string;
 	description?: string;
@@ -26,14 +32,13 @@ interface MetadataResponse {
 	objects: ApiObject[];
 }
 
-/** A photo as the gallery uses it: curated fields resolved, EXIF formatted, variants addressed. */
+/** A photo as the gallery uses it: curated fields resolved, EXIF formatted. */
 export interface Photo {
 	key: string;
-	original: string;
-	display: string;
-	wide: string;
-	grid: string;
-	lqip: string;
+	compressed: string;
+	master: string;
+	width: number;
+	height: number;
 	size: number;
 	uploaded: string;
 	set: string;
@@ -56,15 +61,16 @@ const humanize = (key: string) =>
 export function toPhoto(object: ApiObject): Photo {
 	const title = object.title?.trim() || humanize(object.key);
 	const number = Number.parseInt(object.number ?? '', 10);
+	const compressed = mediaUrl(object.compressed_url ?? object.url) ?? object.url;
+	const master = mediaUrl(object.master_url ?? object.url) ?? object.url;
 
 	return {
 		key: object.key,
-		original: object.url,
-		display: derivativeUrl('display', object.key),
-		wide: derivativeUrl('wide', object.key),
-		grid: derivativeUrl('grid', object.key),
-		lqip: derivativeUrl('lqip', object.key),
-		size: object.size,
+		compressed,
+		master,
+		width: object.width ?? 0,
+		height: object.height ?? 0,
+		size: object.master_size ?? object.size,
 		uploaded: object.uploaded,
 		set: object.set?.trim() || 'unfiled',
 		number: Number.isFinite(number) ? number : 0,

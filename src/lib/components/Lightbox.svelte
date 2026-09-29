@@ -57,7 +57,7 @@
 	}
 
 	// Lock the page behind the viewer, focus the viewer on open, and warm the
-	// neighbouring display images so arrow navigation is instant.
+	// neighbouring images so arrow navigation is instant.
 	$effect(() => {
 		if (!isOpen) return;
 
@@ -67,7 +67,7 @@
 
 		for (const offset of [1, -1]) {
 			const neighbour = photos[index + offset];
-			if (neighbour) new Image().src = neighbour.display;
+			if (neighbour) new Image().src = neighbour.compressed;
 		}
 
 		return () => {
@@ -143,9 +143,9 @@
 			<figure class="viewer__figure">
 				{#key photo.key}
 					<img
-						class="viewer__lqip"
-						class:viewer__lqip--faded={imageReady}
-						src={photo.grid}
+						class="viewer__underlay"
+						class:viewer__underlay--faded={imageReady}
+						src={photo.compressed}
 						alt=""
 						aria-hidden="true"
 						decoding="async"
@@ -154,7 +154,7 @@
 						class="viewer__image"
 						class:viewer__image--ready={imageReady}
 						style="--from: {direction * 2.5}%"
-						src={photo.display}
+						src={photo.master}
 						alt={photo.alt}
 						decoding="async"
 						onload={() => (imageReady = true)}
@@ -331,10 +331,8 @@
 		min-height: 0;
 	}
 
-	/* Stands in while the 2200px file decodes. This is the grid's own derivative, not the
-	   24px LQIP: the grid already fetched it, so it is usually decoded and waiting, and
-	   at this size a 24px source would be an unrecognisable wash. */
-	.viewer__lqip {
+	/* Stands in while the master decodes: the compressed copy the grid already fetched. */
+	.viewer__underlay {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -345,7 +343,7 @@
 		transition: opacity 0.45s ease;
 	}
 
-	.viewer__lqip--faded {
+	.viewer__underlay--faded {
 		opacity: 0;
 	}
 
