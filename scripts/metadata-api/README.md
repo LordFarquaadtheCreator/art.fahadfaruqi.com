@@ -125,7 +125,7 @@ production.
 Attach custom metadata at upload time with `wrangler r2 object put`'s own flags:
 
 ```sh
-npx wrangler r2 object put assets/paintings/sunset.jpg \
+bunx wrangler r2 object put assets/paintings/sunset.jpg \
   --file=./sunset.jpg --remote \
   --content-type=image/webp \
   --cache-control='public, max-age=31536000, immutable' \

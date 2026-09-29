@@ -278,7 +278,7 @@ This is bucket state, not repo state, so it is not in git:
 cat > /tmp/r2-cors.json <<'JSON'
 {"rules":[{"allowed":{"origins":["https://art.fahadfaruqi.com","https://lordfarquaadthecreator.github.io","http://localhost:4173","http://localhost:5173"],"methods":["GET","HEAD"],"headers":["*"]},"exposeHeaders":["ETag","Content-Length"],"maxAgeSeconds":86400}]}
 JSON
-cd metadata-api && npx wrangler r2 bucket cors set assets --file /tmp/r2-cors.json
+cd metadata-api && bunx wrangler r2 bucket cors set assets --file /tmp/r2-cors.json
 curl -s -D- -o /dev/null -H "Origin: https://art.fahadfaruqi.com" \
   https://assets.fahadfaruqi.com/art/compressed/sam-1.avif | grep -i access-control-allow-origin
 ```
