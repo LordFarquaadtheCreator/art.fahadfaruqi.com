@@ -52,12 +52,16 @@ string, which silently broke both the method check and the cache key.
 4. Hand the write to `ctx.waitUntil`. Not `await` — see below.
 
 `listAllObjects(env)` pages `env.ASSETS_BUCKET.list({ cursor, limit: PAGE_SIZE,
-include: ["customMetadata", "httpMetadata"] })` until `listing.truncated` is false,
-and maps each object to `{ url, key, size, uploaded, etag }` with `obj.customMetadata`
-spread over it. Keys under `IGNORED_PREFIXES` — `d/` for this site's generated
-derivatives, `www/` for fahadfaruqi.com sharing the bucket — are skipped, so the
-listing holds originals only. Past `MAX_OBJECTS` it throws rather than returning a
-partial gallery.
+prefix: ART_PREFIX, include: ["customMetadata", "httpMetadata"] })` until
+`listing.truncated` is false. It sorts the page's keys into two maps by prefix —
+`art/master/<stem>.webp` and `art/compressed/<stem>.avif` — then walks the union of
+their stems in order and emits **one entry per photograph**:
+`{ url, key, size, etag, master_url, master_size, compressed_url, compressed_size,
+width, height }` with the master's `customMetadata` spread over it. `key` is the bare
+`<stem>.webp` (not the object key), because the client derives a title from it;
+`width`/`height` come from the compressed object. A stem with only one side falls back
+to the side that exists, so a half-published pair still renders. Past `MAX_OBJECTS` it
+throws rather than returning a partial gallery.
 
 ## Why `ctx.waitUntil`, not `await`
 
@@ -112,8 +116,9 @@ with a 300ms write: awaited, the client waited 305ms; with `waitUntil`, under
 ## Conventions
 
 - R2 custom metadata keys become field names in `objects[]`. The spread happens
-  last, so a metadata key named `url`, `key`, `size`, `uploaded`, or `etag`
-  overwrites the generated value. Treat those as reserved.
+  last, so a metadata key named `url`, `key`, `size`, `uploaded`, `etag`,
+  `master_url`, `master_size`, `compressed_url`, `compressed_size`, `width` or
+  `height` overwrites the generated value. Treat those as reserved.
 - `uploaded` is `Date.prototype.toISOString()`; `etag` is R2's raw etag.
 - TTLs and limits live in the constants at the top of the file: 10 minutes entry,
   10 minutes browser, 1 day preflight, `PAGE_SIZE`, `MAX_OBJECTS`.

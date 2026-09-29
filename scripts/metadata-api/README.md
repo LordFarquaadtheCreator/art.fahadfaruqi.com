@@ -29,11 +29,17 @@ Every other path on `assets.fahadfaruqi.com` is served by R2, not by this Worker
   "count": 1,
   "objects": [
     {
-      "url": "https://assets.fahadfaruqi.com/paintings/sunset.jpg",
-      "key": "paintings/sunset.jpg",
-      "size": 1048576,
+      "url": "https://assets.fahadfaruqi.com/art/master/sam-1.webp",
+      "key": "sam-1.webp",
+      "size": 2841696,
       "uploaded": "2026-09-21T12:00:00.000Z",
       "etag": "abc123",
+      "master_url": "https://assets.fahadfaruqi.com/art/master/sam-1.webp",
+      "master_size": 2841696,
+      "compressed_url": "https://assets.fahadfaruqi.com/art/compressed/sam-1.avif",
+      "compressed_size": 53525,
+      "width": 1600,
+      "height": 1068,
       "title": "Sunset Over the Ocean",
       "medium": "Oil on Canvas",
       "year": "2024",
@@ -43,40 +49,45 @@ Every other path on `assets.fahadfaruqi.com` is served by R2, not by this Worker
 }
 ```
 
-`url`, `key`, `size`, `uploaded`, and `etag` are generated from R2. Everything
-after that comes from the object's custom metadata, with the metadata keys used
-as-is, so `title` in this example was uploaded as the `title` metadata header. An
-object uploaded without any custom metadata returns just the five generated fields.
+One entry is returned per **photograph**, not per object: the `art/master/<stem>.webp`
+and `art/compressed/<stem>.avif` pair is merged by stem. `url`, `key` and `size` name
+the master — `key` is the bare `<stem>.webp` the gallery's titles are derived from — and
+`master_url`/`master_size`/`compressed_url`/`compressed_size` carry both sides. `width`
+and `height` describe the compressed copy, because that is the file every view renders
+and the grid uses those numbers to reserve a cell's shape. A pair with one side missing
+falls back to the side that exists.
+
+`url`, `key`, `size`, `uploaded`, `etag` and the four pair fields are generated from R2.
+Everything after that comes from the object's custom metadata, with the metadata keys
+used as-is, so `title` in this example was uploaded as the `title` metadata header. An
+object uploaded without any custom metadata returns just the generated fields.
 
 Custom metadata is only present because `listAllObjects()` passes
 `include: ["customMetadata", "httpMetadata"]` — the R2 binding omits both from
 list results unless they are requested explicitly. Dropping that option silently
 degrades every response to the five generated fields.
 
-Objects under the `d/` prefix are skipped: they are resized derivatives of the
-originals (see the "Derivatives" section below), not gallery items. Keys under `www/`
-are skipped as well — they belong to fahadfaruqi.com, which shares the bucket.
+Only the `art/` prefix is listed, so nothing else in the bucket can reach the gallery:
+`www/` belongs to fahadfaruqi.com, which shares the bucket, and the old `d/` derivatives
+of the earlier layout are ignored.
 
-## Derivatives
+## Masters and compressed copies
 
-The originals in the bucket are 6016×4016 WebP at quality 85, 1–8 MB each — they were
-PNGs of 110–140 MB until they were re-encoded in place with their metadata carried
-over — and nothing in the app loads them. Every original is accompanied by four resized
-WebP derivatives, generated offline and uploaded to the same bucket:
+The masters in the bucket are 6016×4016 WebP at quality 85, 1–8 MB each — they were PNGs
+of 110–140 MB until they were re-encoded in place with their metadata carried over — and
+the page fetches one only on hover or on opening a photograph. Every master is
+accompanied by one compressed sibling, encoded at upload time by the CLI
+(`ffmpeg -c:v libsvtav1`, crf 22, preset 6, 1600 px wide):
 
-| Key | Width | Purpose |
-| --- | --- | --- |
-| `d/w2200/<name>.webp` | 2200 px | lightbox / viewer image |
-| `d/w1600/<name>.webp` | 1600 px | the 1600w `srcset` candidate — 2× displays and the WebGL quads |
-| `d/w800/<name>.webp` | 800 px | gallery grid cell |
-| `d/lqip/<name>.webp` | 24 px | blur-up placeholder, also carries the aspect ratio |
+| Key | Format | Width | Cache-Control | Purpose |
+| --- | --- | --- | --- | --- |
+| `art/master/<name>.webp` | WebP q85 | 6016 px | `public, max-age=86400` | the archival file; hover fetch and the viewer |
+| `art/compressed/<stem>.avif` | AVIF | 1600 px | `public, max-age=604800` | every view: the grid and the viewer's underlay |
 
-The frontend builds those keys from the original's key (`src/lib/utils/variants.ts`),
-so the naming convention is the contract between whatever generates the derivatives
-and the site. Regenerating derivatives for a newly uploaded original means uploading
-the four keys above with `Content-Type: image/webp` and a long-lived `Cache-Control`;
-anything for the gallery itself needs the original uploaded with its `title`, `altText`,
-`description`, `set` and `number` metadata intact.
+Both objects carry the same curated metadata (`title`, `altText`, `description`, `set`,
+`number`) plus EXIF and the `width`/`height` of the file itself, so the
+listing is built entirely from custom metadata. Publishing a photograph means writing
+both keys — `scripts/README.md` documents the command that does it.
 
 ## Deploy
 

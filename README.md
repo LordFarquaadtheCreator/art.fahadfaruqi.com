@@ -11,8 +11,8 @@ By storing metadata in an image - we can use our CDN's free tier as our database
 
 ```
 R2 bucket "assets"
- ├── <name>.webp                    masters (never loaded by the page)
- └── d/{w2200,w1600,w800,lqip}/<name>.webp
+ ├── art/master/<name>.webp          masters (fetched on hover, drawn when opened)
+ └── art/compressed/<stem>.avif      the file every view renders
       │
       ├── assets.fahadfaruqi.com/<key>            images
       └── assets.fahadfaruqi.com/api/metadata     listing + captions + EXIF
@@ -41,22 +41,19 @@ photograph uploaded a minute ago is in the next reload, not in ten minutes.
 
 ## Images and metadata
 
-Each master in the bucket needs four WebP siblings, which the app derives from the
-key by convention:
+Every photograph is two objects: a master and its compressed sibling, the same stem
+apart, written together by `scripts/cloudflare`'s `create`:
 
-| Key | Width | Used for |
+| Key | Format | Used for |
 | --- | --- | --- |
-| `d/w2200/<name>.webp` | 2200 | viewer |
-| `d/w1600/<name>.webp` | 1600 | 2× displays |
-| `d/w800/<name>.webp` | 800 | grid |
-| `d/lqip/<name>.webp` | 24 | blur-up placeholder |
+| `art/master/<name>.webp` | WebP q85, 6016 px | the archival file; fetched on hover, rendered in the viewer |
+| `art/compressed/<stem>.avif` | AVIF, 1600 px | every view: the grid cells and the viewer's underlay |
 
-Captions come from custom metadata on the master — `set`, `number`, `title`,
-`alttext`, `description` — alongside the EXIF the camera wrote. The Worker returns both
-and filters the `d/` prefix out of the listing, so derivatives never show up as
-photographs. `metadata-api/README.md` documents the API, `scripts/README.md` the CLI
-that writes that metadata, and `AGENTS.md` the details of working in this repo
-(including how the derivatives are generated).
+Captions come from custom metadata on both — `set`, `number`, `title`, `alttext`,
+`description` — alongside the EXIF the camera wrote. The Worker lists the `art/` prefix,
+pairs the two objects by stem, and returns both URLs plus the dimensions the grid needs
+before an image arrives. `metadata-api/README.md` documents the API, `scripts/README.md`
+the CLI that writes both objects, and `AGENTS.md` the details of working in this repo.
 
 ## Deploy
 
