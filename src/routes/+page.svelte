@@ -14,11 +14,11 @@
 	// a stalled animation cannot leave a panel over the gallery.
 	const DISSOLVE_MS = 1400;
 
-	// What the band reports: the state of the read, never a number — the count is the hero's.
+	// What the band reports: the state of the fetch, never a number — the count is the hero's.
 	const READOUT: Record<Status, string> = {
-		loading: 'Receiving index',
-		ready: 'Index received',
-		error: 'Index unavailable'
+		loading: 'Fetching photos',
+		ready: 'Photos received',
+		error: 'Could not load photos'
 	};
 
 	let photos = $state<Photo[]>([]);
