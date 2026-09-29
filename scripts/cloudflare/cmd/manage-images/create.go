@@ -37,7 +37,7 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().String("compressed-prefix", "art/compressed", "Key prefix the compressed sibling is written under")
 	cmd.Flags().Int("compressed-width", 1600, "Width of the compressed sibling, in pixels; the height follows the master's ratio")
 	cmd.Flags().Int("crf", 22, "AVIF crf for the compressed sibling — lower is better and larger")
-	cmd.Flags().Int("preset", 6, "SVT-AV1 preset for the compressed sibling — slower presets spend quality, not bytes")
+	cmd.Flags().Int("preset", 6, "SVT-AV1 preset for the compressed sibling — a slower preset saves bytes by losing quality")
 
 	cmd.Flags().String(
 		"inherit",
