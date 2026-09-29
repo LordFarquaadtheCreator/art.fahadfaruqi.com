@@ -144,10 +144,9 @@
 		>
 			<span class="loading__hairline" aria-hidden="true"></span>
 			<div class="loading__inner">
-				<p class="label num loading__readout fade-in-animation">
+				<p class="label loading__readout fade-in-animation">
 					{readout}<span class="loading__dot" aria-hidden="true"></span>
 				</p>
-				<p class="label num loading__source fade-in-animation">assets.fahadfaruqi.com</p>
 			</div>
 			<div class="loading__frames" aria-hidden="true">
 				{#each [0, 1, 2, 3] as frame (frame)}
