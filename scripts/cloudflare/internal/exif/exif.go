@@ -19,6 +19,13 @@ type Metadata struct {
 	Set         string
 	Number      int
 	Exif        map[string]string
+
+	// The programmed zoom: a point to settle the framing on, the scale to settle at,
+	// and how long to take. A level of 0 means no move.
+	ZoomX        float64
+	ZoomY        float64
+	ZoomLevel    float64
+	ZoomDuration int
 }
 
 // Validate reports the required fields that are still empty.
@@ -45,9 +52,14 @@ func (m *Metadata) Validate() error {
 	return nil
 }
 
+// The four zoom keys are written and read as a set, so the level alone marks one.
+func (m *Metadata) zoomEnabled() bool {
+	return m.ZoomLevel > 0
+}
+
 // FromMap rebuilds metadata from the custom metadata an object already carries,
 // so a re-encoded file can inherit the fields of the item it replaces instead of
-// being prompted for them again. The five named fields are lifted out; every
+// being prompted for them again. The named fields are lifted out; every
 // other key — the EXIF pairs, a preserved upload time — travels in Exif, which is
 // where Map writes them back from.
 func FromMap(custom map[string]string) (*Metadata, error) {
@@ -63,18 +75,43 @@ func FromMap(custom map[string]string) (*Metadata, error) {
 		return nil, fmt.Errorf("number %q is not an integer: %w", normalised["number"], err)
 	}
 
+	// Custom metadata is written byte by byte from R2's own strings, so a value that
+	// will not parse is the writer's mistake; returning it keeps a typo out of a
+	// re-upload, which would otherwise bake the old value into a new object.
+	zoomX, err := parseZoomField(normalised, "zoom_x")
+	if err != nil {
+		return nil, err
+	}
+	zoomY, err := parseZoomField(normalised, "zoom_y")
+	if err != nil {
+		return nil, err
+	}
+	zoomLevel, err := parseZoomField(normalised, "zoom_level")
+	if err != nil {
+		return nil, err
+	}
+	zoomDuration, err := parseZoomField(normalised, "zoom_duration")
+	if err != nil {
+		return nil, err
+	}
+
 	metadata := &Metadata{
-		Title:       normalised["title"],
-		AltText:     normalised["alttext"],
-		Description: normalised["description"],
-		Set:         normalised["set"],
-		Number:      number,
-		Exif:        map[string]string{},
+		Title:        normalised["title"],
+		AltText:      normalised["alttext"],
+		Description:  normalised["description"],
+		Set:          normalised["set"],
+		Number:       number,
+		Exif:         map[string]string{},
+		ZoomX:        zoomX,
+		ZoomY:        zoomY,
+		ZoomLevel:    zoomLevel,
+		ZoomDuration: int(zoomDuration),
 	}
 
 	for k, v := range normalised {
 		switch k {
-		case "title", "alttext", "description", "set", "number":
+		case "title", "alttext", "description", "set", "number",
+			"zoom_x", "zoom_y", "zoom_level", "zoom_duration":
 			continue
 		}
 		metadata.Exif[k] = v
@@ -87,6 +124,20 @@ func FromMap(custom map[string]string) (*Metadata, error) {
 	return metadata, nil
 }
 
+// parseZoomField reads one zoom key; an absent one is the zero value, so an object
+// published before the fields existed is still inheritable.
+func parseZoomField(normalised map[string]string, key string) (float64, error) {
+	raw, ok := normalised[key]
+	if !ok || raw == "" {
+		return 0, nil
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%s %q is not a number: %w", key, raw, err)
+	}
+	return value, nil
+}
+
 // Map renders the metadata as the custom metadata R2 stores alongside the object.
 func (m *Metadata) Map() map[string]string {
 	metaMap := map[string]string{
@@ -95,6 +146,13 @@ func (m *Metadata) Map() map[string]string {
 		"description": m.Description,
 		"set":         m.Set,
 		"number":      strconv.Itoa(m.Number),
+	}
+
+	if m.zoomEnabled() {
+		metaMap["zoom_x"] = strconv.FormatFloat(m.ZoomX, 'f', -1, 64)
+		metaMap["zoom_y"] = strconv.FormatFloat(m.ZoomY, 'f', -1, 64)
+		metaMap["zoom_level"] = strconv.FormatFloat(m.ZoomLevel, 'f', -1, 64)
+		metaMap["zoom_duration"] = strconv.Itoa(m.ZoomDuration)
 	}
 
 	for k, v := range m.Exif {
