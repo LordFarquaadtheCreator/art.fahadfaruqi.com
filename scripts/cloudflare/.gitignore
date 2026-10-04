@@ -1,1 +1,3 @@
 config.yaml
+# The compiled CLI, anchored so the pattern cannot also match cmd/manage-images/.
+/manage-images

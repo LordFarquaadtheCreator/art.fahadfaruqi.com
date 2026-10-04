@@ -75,6 +75,40 @@ metadata and EXIF, plus the `width` and `height` of the file itself.
 | `-compressed-width` | `1600` | Width of the sibling; the height follows the master's ratio |
 | `-crf` | `22` | AVIF crf for the sibling — lower is better and larger |
 | `-preset` | `6` | SVT-AV1 preset for the sibling — slower presets spend quality, not bytes |
+| `-replace` | `false` | Publish even when the stem is already taken, overwriting the objects the file resolves to |
+
+### A publish is refused when the stem is already taken
+
+The compressed sibling is named after the **stem** alone — `art/compressed/<stem>.avif`
+— so the stem, not the file name, is the unit of identity in the bucket. Two masters
+sharing a stem are one slot: the Worker merges them into a single gallery entry and
+they fight over one rendered copy.
+
+Before anything is encoded or uploaded, `create` resolves each file's two derived keys
+against what is already in the bucket and refuses when either one is taken:
+
+```
+Refusing to publish 1 file(s) that would overwrite existing photographs:
+
+  home-1.png
+      art/master/home-1.webp already holds this stem — "Sunlight" in home no. 1
+      art/compressed/home-1.avif would be replaced — "Sunlight" in home no. 1
+```
+
+This is the case a file-name check cannot see: `home-1.png` does not collide with
+`home-1.webp` as a key, so the master lands *beside* the existing one while the
+compressed copy it derives replaces that photograph's rendered image — leaving the old
+title and metadata attached to the new pixels. The check runs ahead of the encoder, so
+a collision costs one listing rather than a re-encode of a large file.
+
+Intent is what separates a mistake from a re-encode:
+
+- `--replace` says so outright, and prints what it is about to overwrite.
+- `--inherit` says it for the one object it reads its metadata from, which is the
+  documented way to re-encode an item in place.
+
+Without either, an occupied slot is a hard failure. Renaming the local file to a free
+stem is usually what was actually meant.
 
 Cache-Control is set at upload: `public, max-age=86400` on the master and
 `public, max-age=604800` on the compressed copy. Neither is `immutable`, so a

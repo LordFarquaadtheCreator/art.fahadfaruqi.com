@@ -45,6 +45,12 @@ func newCreateCmd() *cobra.Command {
 		"Upload with the metadata of the existing object of the same name and this extension, without prompting, e.g. --inherit .png",
 	)
 
+	cmd.Flags().Bool(
+		"replace",
+		false,
+		"Publish even when the stem is already taken, overwriting the objects the file resolves to",
+	)
+
 	return cmd
 }
 
@@ -90,6 +96,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 	workingDir, _ := cmd.Flags().GetString("dir")
 	pattern, _ := cmd.Flags().GetString("pattern")
 	inherit, _ := cmd.Flags().GetString("inherit")
+	replace, _ := cmd.Flags().GetBool("replace")
 	masterPrefix, _ := cmd.Flags().GetString("master-prefix")
 	compressedPrefix, _ := cmd.Flags().GetString("compressed-prefix")
 	width, _ := cmd.Flags().GetInt("compressed-width")
@@ -101,14 +108,19 @@ func runCreate(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	client := newClient()
+
+	// Refuse a publish that would land on an occupied slot, before anything is encoded
+	// or written. This runs ahead of the encoder on purpose: a collision should cost a
+	// listing, not a re-encode of a hundred-megabyte file.
+	guardAgainstOverwrites(client, filePaths, masterPrefix, compressedPrefix, inherit, replace)
+
 	// The compressed sibling is generated here, so a machine without the encoder
 	// fails before anything reaches the bucket: a master with no sibling is a
 	// photograph the gallery would have to render at full size.
 	if err := ffmpeg.Available(); err != nil {
 		log.Fatalf("Cannot generate the compressed sibling: %v", err)
 	}
-
-	client := newClient()
 
 	scratch, err := os.MkdirTemp("", "manage-images")
 	if err != nil {
