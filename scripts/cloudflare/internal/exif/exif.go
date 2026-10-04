@@ -170,6 +170,8 @@ func Extract(filePath string) (*Metadata, error) {
 		return extractEXIF(filePath)
 	case ".png":
 		return extractXMP(filePath)
+	case ".webp":
+		return extractWebP(filePath)
 	default:
 		return &Metadata{Exif: make(map[string]string)}, nil
 	}
@@ -232,6 +234,70 @@ func extractXMP(filePath string) (*Metadata, error) {
 	}
 
 	return metadata, nil
+}
+
+// extractWebP reads the camera data a WebP carries. A master is encoded from the
+// camera file with its metadata copied in (cwebp -metadata, sharp withMetadata),
+// so the container's XMP — and, when the producer wrote one, EXIF — chunk is the
+// only place its camera data will ever live.
+func extractWebP(filePath string) (*Metadata, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	metadata := &Metadata{Exif: make(map[string]string)}
+
+	if len(data) < 12 || string(data[0:4]) != "RIFF" || string(data[8:12]) != "WEBP" {
+		return metadata, nil
+	}
+
+	// RIFF: "WEBP" followed by <fourcc><uint32 LE length><payload> chunks, each
+	// padded to an even length.
+	for offset := 12; offset+8 <= len(data); {
+		chunkType := string(data[offset : offset+4])
+		length := int(binary.LittleEndian.Uint32(data[offset+4 : offset+8]))
+		payloadStart := offset + 8
+		payloadEnd := payloadStart + length
+		if payloadEnd > len(data) {
+			break
+		}
+
+		switch chunkType {
+		case "XMP ":
+			parseXMP(string(data[payloadStart:payloadEnd]), metadata)
+		case "EXIF":
+			addEXIFBlob(data[payloadStart:payloadEnd], metadata)
+		}
+
+		offset = payloadEnd
+		if length%2 == 1 {
+			offset++
+		}
+	}
+
+	return metadata, nil
+}
+
+// addEXIFBlob reads a raw EXIF payload. Containers disagree on whether the blob
+// carries the "Exif\0\0" preamble a JPEG uses, so both readings are tried.
+func addEXIFBlob(blob []byte, metadata *Metadata) {
+	raw, err := exif.SearchAndExtractExif(blob)
+	if err != nil {
+		raw, err = exif.SearchAndExtractExif(append([]byte("Exif\x00\x00"), blob...))
+		if err != nil {
+			return
+		}
+	}
+
+	tags, _, err := exif.GetFlatExifData(raw, nil)
+	if err != nil {
+		return
+	}
+
+	for _, tag := range tags {
+		metadata.Exif[tag.TagName] = tag.FormattedFirst
+	}
 }
 
 func checkPNGSignature(r *bytes.Reader) error {

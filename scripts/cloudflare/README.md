@@ -121,9 +121,12 @@ from a PNG, read from `art/master/` — and skips the prompts entirely. It also 
 the original's upload time into custom metadata, because R2's own timestamp resets on
 every upload and the gallery reads that value as the set's date.
 
-`EXIF.Extract` reads by extension and has no `.webp` case, so a WebP uploaded without
-`--inherit` arrives with an empty EXIF map (and a warning). Anything re-encoded from an
-object that already carries metadata should go through `--inherit`.
+`EXIF.Extract` reads by extension: `.jpg`/`.jpeg` as EXIF, `.png` and `.webp` as XMP
+(a WebP also contributes its `EXIF` chunk when one is present). A master encoded
+without its metadata — `cwebp` copies nothing unless `-metadata` is given, sharp strips
+unless `withMetadata()` is set — therefore arrives with an empty EXIF map. Encode the
+metadata in (`cwebp -metadata all`), or go through `--inherit` when the object being
+replaced already carries it.
 
 ```sh
 ./manage-images create -d ~/exports/webp -p '*.webp' --inherit .png
