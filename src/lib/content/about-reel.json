@@ -1,0 +1,88 @@
+{
+	"progression": { "entry": 0.45, "hold": 0.45, "exit": 0.4 },
+	"params": { "perFrame": 0.75 },
+	"sections": [
+		{
+			"id": "lead",
+			"component": "rise",
+			"kind": "note",
+			"label": "Lead",
+			"text": "Draft — the turn: the camera arrives, and frames stop being souvenirs."
+		},
+		{
+			"id": "possibilities",
+			"component": "rise",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-10.avif",
+			"alt": "Possibilities",
+			"title": "Possibilities",
+			"width": 1600,
+			"height": 1068
+		},
+		{
+			"id": "bridge",
+			"component": "drift",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-1.avif",
+			"alt": "manhattan bridge",
+			"title": "manhattan bridge",
+			"width": 1600,
+			"height": 1068
+		},
+		{
+			"id": "record-store",
+			"component": "develop",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-2.avif",
+			"alt": "Record Store",
+			"title": "Record Store",
+			"width": 1600,
+			"height": 2396
+		},
+		{
+			"id": "first-frame",
+			"component": "rise",
+			"kind": "note",
+			"label": "Note",
+			"text": "Draft — the first frame that was yours."
+		},
+		{
+			"id": "darkness",
+			"component": "develop",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-12.avif",
+			"alt": "In the Cover of Darkness",
+			"title": "In the Cover of Darkness",
+			"width": 1600,
+			"height": 2396
+		},
+		{
+			"id": "working-man",
+			"component": "rise",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-5.avif",
+			"alt": "Working Man",
+			"title": "Working Man",
+			"width": 1600,
+			"height": 2396,
+			"params": { "rise": 34 }
+		},
+		{
+			"id": "dumbo",
+			"component": "drift",
+			"kind": "image",
+			"src": "https://assets.fahadfaruqi.com/art/compressed/sam-8.avif",
+			"alt": "Dumbo",
+			"title": "Dumbo",
+			"width": 1600,
+			"height": 1068
+		},
+		{
+			"id": "kept",
+			"component": "rise",
+			"kind": "kept",
+			"label": "Kept frame",
+			"text": "A scan belongs here — a photograph that was kept, not taken."
+		}
+	]
+}
