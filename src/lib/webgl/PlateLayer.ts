@@ -14,6 +14,7 @@ import {
 	WebGLRenderer
 } from 'three';
 import { plateFragment, plateVertex } from './shaders';
+import type { ZoomSpec } from '../utils/metadata';
 
 type Quad = {
 	mesh: Mesh;
@@ -23,9 +24,21 @@ type Quad = {
 	frame: HTMLElement;
 	hover: number;
 	hoverTarget: number;
+	zoom: QuadZoom | null;
 	loading: boolean;
 	onEnter: () => void;
 	onLeave: () => void;
+};
+
+type QuadZoom = {
+	x: number;
+	y: number;
+	level: number;
+	/** Seconds one full traverse takes. */
+	duration: number;
+	/** 0 at full scale, 1 at the settled scale. */
+	progress: number;
+	target: number;
 };
 
 // Displacement and RGB split are switched on by the commit after this one, so a
@@ -80,7 +93,7 @@ export class PlateLayer {
 	}
 
 	/** Adopt a plate element. Called from a Svelte action, so it runs per mount. */
-	register(frame: HTMLElement): () => void {
+	register(frame: HTMLElement, zoom: ZoomSpec | null = null): () => void {
 		if (this.contextLost) return () => {};
 
 		const image = frame.querySelector<HTMLImageElement>('.plate__image');
@@ -99,9 +112,25 @@ export class PlateLayer {
 			frame,
 			hover: 0,
 			hoverTarget: 0,
+			zoom: zoom
+				? {
+						x: zoom.x,
+						y: zoom.y,
+						level: zoom.level,
+						duration: Math.max(0.001, zoom.duration / 1000),
+						progress: 0,
+						target: 0
+					}
+				: null,
 			loading: false,
-			onEnter: () => (quad.hoverTarget = 1),
-			onLeave: () => (quad.hoverTarget = 0)
+			onEnter: () => {
+				quad.hoverTarget = 1;
+				if (quad.zoom) quad.zoom.target = 1;
+			},
+			onLeave: () => {
+				quad.hoverTarget = 0;
+				if (quad.zoom) quad.zoom.target = 0;
+			}
 		};
 
 		frame.addEventListener('pointerenter', quad.onEnter);
@@ -229,6 +258,27 @@ export class PlateLayer {
 
 			const distance = Math.min(1, Math.abs(rect.top + rect.height / 2 - centre) / centre);
 			quad.hover += (quad.hoverTarget - quad.hover) * (1 - Math.exp(-dt / 0.12));
+
+			// The programmed zoom travels at its own pace — one full traverse takes the
+			// photograph's duration — and eases in and out of the move, so an interrupted
+			// enter/leave reverses from wherever it had reached.
+			if (quad.zoom) {
+				const zoom = quad.zoom;
+				const step = dt / zoom.duration;
+				if (zoom.progress < zoom.target) {
+					zoom.progress = Math.min(zoom.target, zoom.progress + step);
+				} else if (zoom.progress > zoom.target) {
+					zoom.progress = Math.max(zoom.target, zoom.progress - step);
+				}
+				const eased = 0.5 - 0.5 * Math.cos(Math.PI * zoom.progress);
+				quad.material.uniforms.uZoomX.value = zoom.x;
+				quad.material.uniforms.uZoomY.value = zoom.y;
+				quad.material.uniforms.uZoomScale.value = 1 + (zoom.level - 1) * eased;
+				quad.material.uniforms.uZoomActive.value = 1;
+			} else {
+				quad.material.uniforms.uZoomActive.value = 0;
+			}
+
 			quad.material.uniforms.uTime.value = time;
 			quad.material.uniforms.uProgress.value = EFFECTS ? distance * distance : 0;
 			quad.material.uniforms.uHover.value = EFFECTS ? quad.hover : 0;
@@ -251,7 +301,10 @@ export class PlateLayer {
 			this.canvas.dataset.ready = '';
 		}
 
-		const flag = drawable > 0 ? 'on' : 'off';
+		// `off` is the manual escape hatch the loop itself reads, so a cold frame —
+		// nothing drawable until the first texture has uploaded — must report `idle`
+		// instead. Writing `off` here would end the loop on its first frame.
+		const flag = drawable > 0 ? 'on' : 'idle';
 		if (document.documentElement.dataset.webgl !== flag) {
 			document.documentElement.dataset.webgl = flag;
 		}
@@ -332,11 +385,18 @@ function makeMaterial(noise: Texture): ShaderMaterial {
 			uTime: { value: 0 },
 			uProgress: { value: 0 },
 			uHover: { value: 0 },
+			uZoomX: { value: 0.5 },
+			uZoomY: { value: 0.5 },
+			uZoomScale: { value: 1 },
+			uZoomActive: { value: 0 },
 			uGrade: { value: 0 },
 			uGrain: { value: 0 }
 		},
 		depthTest: false,
-		depthWrite: false
+		depthWrite: false,
+		// A photograph the programmed zoom has pulled back is transparent around itself,
+		// so its frame shows through; every other pixel is opaque as before.
+		transparent: true
 	});
 }
 

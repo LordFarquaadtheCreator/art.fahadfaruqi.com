@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flushSync } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { navLine } from '$lib/actions/nav-line';
 	import type { Photo } from '$lib/utils/metadata';
@@ -23,18 +24,40 @@
 	let drag = $state(0);
 	let dragging = $state(false);
 	let imageReady = $state(false);
+	let zoomed = $state(false);
 	// Which way the viewer is travelling, so a swap slides in from the side you came from.
 	let direction = $state(1);
 
 	const photo = $derived(photos[index]);
+	const zoom = $derived(photo?.zoom ?? null);
 	const hasPrevious = $derived(index > 0);
 	const hasNext = $derived(index < photos.length - 1);
+
+	// The frame is the photograph's own box, sized from the listing, so the zoom can
+	// clip at the photograph's edge instead of spilling onto the panel.
+	const frameStyle = $derived(
+		[
+			`--frame-ar: ${photo && photo.width > 0 && photo.height > 0 ? photo.width / photo.height : 1.5}`,
+			`--zoom-x: ${zoom ? zoom.x * 100 : 50}%`,
+			`--zoom-y: ${zoom ? zoom.y * 100 : 50}%`,
+			`--zoom-scale: ${zoom ? zoom.level : 1}`,
+			`--zoom-ms: ${zoom ? zoom.duration : 0}ms`
+		].join('; ')
+	);
 
 	const reduced =
 		typeof window !== 'undefined' &&
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	const fadeMs = (duration: number) => ({ duration: reduced ? 0 : duration });
+
+	// Closing starts the return before the branch begins to fade: the update is flushed
+	// by hand, because a branch that is going out no longer updates its bindings, and
+	// waiting for the next tick would leave the photograph at its settled scale.
+	function requestClose() {
+		flushSync(() => (zoomed = false));
+		onClose();
+	}
 
 	function previous() {
 		if (!hasPrevious) return;
@@ -51,7 +74,7 @@
 	function handleKeydown(event: KeyboardEvent) {
 		if (!isOpen) return;
 
-		if (event.key === 'Escape') onClose();
+		if (event.key === 'Escape') requestClose();
 		else if (event.key === 'ArrowLeft') previous();
 		else if (event.key === 'ArrowRight') next();
 	}
@@ -79,6 +102,15 @@
 	$effect(() => {
 		photo?.key;
 		imageReady = false;
+		zoomed = false;
+	});
+
+	// The travel starts once the photograph is on screen, so the whole move is watched
+	// rather than mostly spent behind the decode. Reduced motion holds full scale.
+	$effect(() => {
+		if (!isOpen || !imageReady || !zoom || reduced) return;
+		const frame = requestAnimationFrame(() => (zoomed = true));
+		return () => cancelAnimationFrame(frame);
 	});
 
 	function handleTouchStart(event: TouchEvent) {
@@ -115,7 +147,7 @@
 		aria-label="{photo.title} — image viewer"
 		transition:fade={fadeMs(220)}
 	>
-		<button class="viewer__scrim" type="button" onclick={onClose} aria-label="Close viewer"></button>
+		<button class="viewer__scrim" type="button" onclick={requestClose} aria-label="Close viewer"></button>
 
 		<!-- Field framing: brackets in the viewer's own margin, never over the photograph,
 		     and the load status. An <img> reports no byte progress, so the status is the
@@ -150,16 +182,23 @@
 						aria-hidden="true"
 						decoding="async"
 					/>
-					<img
-						class="viewer__image"
-						class:viewer__image--ready={imageReady}
-						style="--from: {direction * 2.5}%"
-						src={photo.master}
-						alt={photo.alt}
-						decoding="async"
-						onload={() => (imageReady = true)}
-						onerror={() => (imageReady = true)}
-					/>
+					<div
+						class="viewer__frame"
+						class:viewer__frame--zoomed={zoomed}
+						style={frameStyle}
+					>
+						<div class="viewer__slide" style="--from: {direction * 2.5}%">
+							<img
+								class="viewer__image"
+								class:viewer__image--ready={imageReady}
+								src={photo.master}
+								alt={photo.alt}
+								decoding="async"
+								onload={() => (imageReady = true)}
+								onerror={() => (imageReady = true)}
+							/>
+						</div>
+					</div>
 				{/key}
 			</figure>
 
@@ -211,7 +250,7 @@
 			<button
 				class="nav-button label viewer__control"
 				type="button"
-				onclick={onClose}
+				onclick={requestClose}
 				aria-label="Close viewer"
 				use:navLine
 			>
@@ -347,13 +386,37 @@
 		opacity: 0;
 	}
 
+	/* The frame is the photograph's own box, sized from the listing's dimensions, so
+	   the zoom clips at the photograph's edge instead of spilling onto the panel. */
+	.viewer__frame {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: min(100%, calc(min(84vh, 100rem) * var(--frame-ar, 1.5)));
+		aspect-ratio: var(--frame-ar, 1.5);
+		overflow: hidden;
+	}
+
+	.viewer__slide {
+		width: 100%;
+		height: 100%;
+		animation: image-swap 0.52s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+	}
+
 	.viewer__image {
-		max-width: 100%;
-		max-height: min(84vh, 100rem);
+		width: 100%;
+		height: 100%;
 		object-fit: contain;
 		opacity: 0;
-		transition: opacity 0.32s ease;
-		animation: image-swap 0.52s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+		transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+		transition:
+			transform var(--zoom-ms, 1600ms) cubic-bezier(0.37, 0, 0.63, 1),
+			opacity 0.32s ease;
+	}
+
+	.viewer__frame--zoomed .viewer__image {
+		transform: scale(var(--zoom-scale, 1));
 	}
 
 	.viewer__image--ready {
@@ -453,8 +516,8 @@
 			align-self: start;
 		}
 
-		.viewer__image {
-			max-height: 58vh;
+		.viewer__frame {
+			width: min(100%, calc(min(58vh, 100rem) * var(--frame-ar, 1.5)));
 		}
 	}
 </style>

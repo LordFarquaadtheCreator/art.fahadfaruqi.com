@@ -1,8 +1,9 @@
 // GLSL for the plate quads. The noise texture is generated in JS (see makeNoiseTexture),
 // so nothing here ships as an asset.
 //
-// The fragment shader does four things to a photograph, in this order: the pointer
-// zoom, the highlight bleed of film halation, a print-like grade, and grain. All of it
+// The fragment shader does four things to a photograph, in this order: the framing
+// zoom (a small pointer nudge, or a programmed move when the photograph carries one),
+// the highlight bleed of film halation, a print-like grade, and grain. All of it
 // is deliberately gentle — these are somebody's photographs, and the effect exists to
 // make them read as prints rather than as files.
 
@@ -21,6 +22,10 @@ export const plateFragment = /* glsl */ `
 	uniform float uTime;
 	uniform float uProgress;   // 0 at the viewport centre, 1 at the edges
 	uniform float uHover;      // 0 → 1 while the pointer is on the plate
+	uniform float uZoomX;      // the point a programmed zoom settles on, per axis
+	uniform float uZoomY;
+	uniform float uZoomScale;  // the scale it has reached so far
+	uniform float uZoomActive; // 1 for a programmed zoom, 0 for the pointer nudge
 	uniform float uGrade;      // 0 → 1, master mix for the print grade
 	uniform float uGrain;      // grain amplitude
 
@@ -38,9 +43,19 @@ export const plateFragment = /* glsl */ `
 	}
 
 	void main() {
-		// Zoom in UV space rather than by scaling the quad, which would spill over the
-		// caption and the neighbouring plates.
-		vec2 uv = (vUv - 0.5) * (1.0 - 0.025 * uHover) + 0.5;
+		// The framing moves in UV space rather than by scaling the quad, which would
+		// spill over the caption and the neighbouring plates. A plate with a programmed
+		// zoom samples about its own point at its own scale; every other plate keeps the
+		// small pointer nudge about its centre.
+		vec2 origin = mix(vec2(0.5), vec2(uZoomX, uZoomY), uZoomActive);
+		float framing = mix(1.0 - 0.025 * uHover, uZoomScale, uZoomActive);
+		vec2 uv = (vUv - origin) / framing + origin;
+
+		// A scale below 1 pulls the photograph back and lets its frame show around it,
+		// so the quad goes transparent wherever the sample falls outside the photograph.
+		float inPhotograph =
+			step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+		float alpha = mix(1.0, inPhotograph, uZoomActive);
 
 		float warp_amount = 0.026 * uProgress + 0.05 * uHover;
 		float split = 0.0035 * uProgress + 0.004 * uHover;
@@ -79,6 +94,6 @@ export const plateFragment = /* glsl */ `
 
 		colour += (n - 1.0) * 0.5 * uGrain * weight;
 
-		gl_FragColor = vec4(colour, 1.0);
+		gl_FragColor = vec4(colour, alpha);
 	}
 `;

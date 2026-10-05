@@ -1,27 +1,28 @@
 import { browser } from '$app/environment';
 import { PlateLayer } from './PlateLayer';
+import type { ZoomSpec } from '$lib/utils/metadata';
 
 let layer: PlateLayer | null = null;
 let registrations = 0;
 let unavailable = false;
 
 /** Svelte action: hands a plate frame to the WebGL layer. */
-export function registerPlate(frame: HTMLElement) {
-	return { destroy: register(frame) };
+export function registerPlate(frame: HTMLElement, zoom: ZoomSpec | null = null) {
+	return { destroy: register(frame, zoom) };
 }
 
 /**
  * Registers a plate frame with the WebGL layer, which owns a single canvas appended to
  * the body. The layer is created on first use and torn down when the last plate goes.
  */
-function register(frame: HTMLElement): () => void {
+function register(frame: HTMLElement, zoom: ZoomSpec | null): () => void {
 	if (!browser || unavailable || !supported()) return () => {};
 
 	layer ??= create();
 	if (!layer) return () => {};
 
 	registrations++;
-	const unregister = layer.register(frame);
+	const unregister = layer.register(frame, zoom);
 
 	return () => {
 		unregister();

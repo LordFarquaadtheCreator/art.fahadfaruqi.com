@@ -25,11 +25,26 @@ interface ApiObject extends RawExif {
 	description?: string;
 	set?: string;
 	number?: string;
+	zoom_x?: string;
+	zoom_y?: string;
+	zoom_level?: string;
+	zoom_duration?: string;
 }
 
 interface MetadataResponse {
 	count: number;
 	objects: ApiObject[];
+}
+
+/** A programmed zoom: settle the framing on a point, at a scale, over a time. */
+export interface ZoomSpec {
+	/** The point to settle on, as fractions of the photograph (0–1 per axis). */
+	x: number;
+	y: number;
+	/** The scale to settle at: 1 = no move, 2 = 2× in, 0.5 = 2× out. */
+	level: number;
+	/** Milliseconds one full traverse takes. */
+	duration: number;
 }
 
 /** A photo as the gallery uses it: curated fields resolved, EXIF formatted. */
@@ -46,6 +61,7 @@ export interface Photo {
 	title: string;
 	alt: string;
 	description: string;
+	zoom: ZoomSpec | null;
 	exif: Exif;
 }
 
@@ -57,6 +73,25 @@ const humanize = (key: string) =>
 		.replace(/\s+/g, ' ')
 		.trim()
 		.replace(/^[a-z]/, (character) => character.toUpperCase());
+
+/**
+ * The four zoom keys arrive as strings like every other curated field, and they are
+ * written as a set: any missing or malformed value means no programmed zoom, and a
+ * level of 1 is the CLI's own "no move".
+ */
+function parseZoom(object: ApiObject): ZoomSpec | null {
+	const x = Number.parseFloat(object.zoom_x ?? '');
+	const y = Number.parseFloat(object.zoom_y ?? '');
+	const level = Number.parseFloat(object.zoom_level ?? '');
+	const duration = Number.parseFloat(object.zoom_duration ?? '');
+
+	if (![x, y, level, duration].every(Number.isFinite)) return null;
+	if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+	if (level <= 0 || level === 1) return null;
+	if (duration <= 0) return null;
+
+	return { x, y, level, duration };
+}
 
 export function toPhoto(object: ApiObject): Photo {
 	const title = object.title?.trim() || humanize(object.key);
@@ -77,6 +112,7 @@ export function toPhoto(object: ApiObject): Photo {
 		title,
 		alt: object.alttext?.trim() || title,
 		description: object.description?.trim() || '',
+		zoom: parseZoom(object),
 		exif: formatExif(object)
 	};
 }

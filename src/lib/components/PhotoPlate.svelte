@@ -15,11 +15,34 @@
 	let measuredRatio = $state<number | null>(null);
 	const ratio = $derived(metaRatio ?? measuredRatio);
 
+	const zoom = $derived(photo.zoom);
+
+	// The zoom travels; reduced motion holds the frame at full scale instead of
+	// jumping straight to the settled one.
+	const reduced =
+		typeof window !== 'undefined' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	const frameStyle = $derived.by(() => {
+		const parts: string[] = [];
+		if (ratio !== null) parts.push(`aspect-ratio: ${ratio}`);
+		if (zoom) {
+			parts.push(
+				`--zoom-scale: ${zoom.level}`,
+				`--zoom-x: ${zoom.x * 100}%`,
+				`--zoom-y: ${zoom.y * 100}%`,
+				`--zoom-ms: ${zoom.duration}ms`
+			);
+		}
+		return parts.length > 0 ? parts.join('; ') : null;
+	});
+
 	const DWELL_MS = 500;
 	const WARM_MS = 300;
 
 	let revealed = $state(false);
 	let focused = $state(false);
+	let zoomed = $state(false);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	// The master is megabytes; it is fetched only once a pointer settles here.
@@ -46,6 +69,14 @@
 	function disarm() {
 		stopTimer();
 		revealed = false;
+	}
+
+	function zoomIn() {
+		if (zoom && !reduced) zoomed = true;
+	}
+
+	function zoomOut() {
+		zoomed = false;
 	}
 
 	function warmMaster() {
@@ -127,9 +158,11 @@
 		<button
 			class="plate__frame"
 			class:plate__frame--loaded={loaded}
+			class:plate__frame--zoomable={zoom !== null}
+			class:plate__frame--zoomed={zoomed}
 			type="button"
-			use:registerPlate
-			style={ratio ? `aspect-ratio: ${ratio}` : null}
+			use:registerPlate={zoom}
+			style={frameStyle}
 			onclick={() => {
 				disarm();
 				onOpen(photo);
@@ -139,12 +172,14 @@
 				if (canHover && event.pointerType === 'mouse') {
 					arm();
 					warmSoon();
+					zoomIn();
 				}
 			}}
 			onpointerleave={() => {
 				dropIndex();
 				disarm();
 				cancelWarm();
+				zoomOut();
 			}}
 			onfocus={() => {
 				focused = true;
@@ -222,9 +257,25 @@
 		opacity: 1;
 	}
 
-	.plate__frame:hover .plate__image,
-	.plate__frame:focus-visible .plate__image {
+	/* The generic pointer nudge — a photograph with its own programmed zoom uses that
+	   travel instead of the nudge. */
+	.plate__frame:not(.plate__frame--zoomable):hover .plate__image,
+	.plate__frame:not(.plate__frame--zoomable):focus-visible .plate__image {
 		transform: scale(1.025);
+	}
+
+	/* The programmed zoom: settle the framing on the photograph's own point, at its
+	   own scale, over its own duration. The origin and the transition are set for both
+	   states, so an interrupted travel reverses about the same point at the same pace. */
+	.plate__frame--zoomable .plate__image {
+		transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+		transition:
+			transform var(--zoom-ms, 900ms) cubic-bezier(0.37, 0, 0.63, 1),
+			opacity 0.7s ease;
+	}
+
+	.plate__frame--zoomed .plate__image {
+		transform: scale(var(--zoom-scale, 1));
 	}
 
 	.plate__note {
