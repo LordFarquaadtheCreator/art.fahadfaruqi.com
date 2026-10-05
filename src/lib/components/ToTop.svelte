@@ -1,11 +1,13 @@
 <script lang="ts">
+	import { viewer } from '$lib/utils/viewer.svelte';
+
 	let { progress }: { progress: number } = $props();
 
 	const reducedMotion = () =>
 		typeof window !== 'undefined' &&
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-	const visible = $derived(progress > 0.08);
+	const visible = $derived(progress > 0.08 && !viewer.open);
 </script>
 
 <button

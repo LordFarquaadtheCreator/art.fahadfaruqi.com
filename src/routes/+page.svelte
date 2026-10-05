@@ -7,6 +7,7 @@
 	import SetIndex from '$lib/components/SetIndex.svelte';
 	import { groupBySet } from '$lib/utils/group-images';
 	import { fetchPhotos, type Photo } from '$lib/utils/metadata';
+	import { viewer } from '$lib/utils/viewer.svelte';
 
 	type Status = 'loading' | 'ready' | 'error';
 
@@ -30,7 +31,6 @@
 	let failure = $state('');
 
 	let activeSet = $state('all');
-	let viewerOpen = $state(false);
 	let viewerIndex = $state(0);
 
 	const readout = $derived(READOUT[status]);
@@ -82,7 +82,7 @@
 	function openViewer(photo: Photo) {
 		const index = visiblePhotos.findIndex((candidate) => candidate.key === photo.key);
 		viewerIndex = index === -1 ? 0 : index;
-		viewerOpen = true;
+		viewer.open = true;
 	}
 
 	let pass = $state(0);
@@ -168,8 +168,8 @@
 <Lightbox
 	photos={visiblePhotos}
 	index={viewerIndex}
-	isOpen={viewerOpen}
-	onClose={() => (viewerOpen = false)}
+	isOpen={viewer.open}
+	onClose={() => (viewer.open = false)}
 	onNavigate={(next) => (viewerIndex = next)}
 />
 
