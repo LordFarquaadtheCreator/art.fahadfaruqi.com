@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { count } from '$lib/actions/count';
 	import SplitText from './SplitText.svelte';
-
+	
 	let {
 		status,
 		photoCount,
@@ -11,11 +11,15 @@
 		photoCount: number;
 		setCount: number;
 	} = $props();
+
+	let hindi = Math.floor(Math.random() * 10) % 2 == 0;
+
+	const name = $derived(hindi ? 'फाहाद फारूकी' : 'Fahad Faruqi');
 </script>
 
 <section class="hero">
-	<h1 class="title large" aria-label="Fahad Faruqi">
-		<SplitText text="Fahad Faruqi" />
+	<h1 class="title large" aria-label={name}>
+		<SplitText text={name} />
 	</h1>
 
 	<div class="hairline hero__meta">
