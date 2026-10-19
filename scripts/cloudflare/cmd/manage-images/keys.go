@@ -18,7 +18,7 @@ import (
 func selectKeys(client *r2.Client, dir, pattern string, args []string, all bool) ([]string, error) {
 	if pattern == "" && len(args) == 0 {
 		if !all {
-			return nil, fmt.Errorf("no objects selected: pass -pattern or one or more keys")
+			return nil, fmt.Errorf("no objects selected: pass -p/--pattern or one or more keys")
 		}
 
 		objects, err := client.List("")

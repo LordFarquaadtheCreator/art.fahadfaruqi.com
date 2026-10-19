@@ -81,7 +81,7 @@ func localFiles(workingDir, pattern string, args []string) ([]string, error) {
 	}
 
 	if len(args) < 1 {
-		return nil, fmt.Errorf("usage: manage-images create -dir <directory> -pattern <pattern> OR manage-images create -dir <directory> <file1> [file2...]")
+		return nil, fmt.Errorf("usage: manage-images create -d <directory> -p <pattern> OR manage-images create -d <directory> <file1> [file2...]")
 	}
 
 	filePaths := make([]string, 0, len(args))

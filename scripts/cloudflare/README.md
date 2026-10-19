@@ -34,11 +34,15 @@ Every command takes the same two flags:
 | `-d, --dir` | Local directory for `create`; key prefix in the bucket for the rest |
 | `-p, --pattern` | Glob, matched against local file names or bucket keys |
 
-`-dir` and `-pattern` are joined the way a path is, so `-d art/master -p '*.webp'`
+`-d` and `-p` are joined the way a path is, so `-d art/master -p '*.webp'`
 selects every master. A glob is matched with Go's `filepath.Match` rules, so `*`
 does not cross a `/`: `-p '*'` selects only the keys directly under the prefix,
 while `-d art/compressed -p '*.avif'` selects the compressed tier. Alternatively
 pass bucket keys as positional arguments.
+
+The long form needs two dashes: pflag is GNU-style, so `-pattern` is not a flag
+name but the shorthand `-p` with the value `attern`. Quote every glob — an
+unquoted `*` is expanded by the shell before the tool sees it.
 
 ## Commands
 
