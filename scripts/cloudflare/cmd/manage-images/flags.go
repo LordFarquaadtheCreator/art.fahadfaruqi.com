@@ -32,9 +32,8 @@ func shorthands(root *cobra.Command) map[byte]bool {
 	return byLetter
 }
 
-// validateShorthands reads -dir the way a cluster is meant to read: -d -i -r. pflag
-// would take "ir" as -d's value instead, so the letters have to be checked before
-// parsing, where the mistake can still be reported.
+// validateShorthands checks the letters before parsing, where pflag would take
+// "ir" as -d's value instead of reporting it.
 func validateShorthands(root *cobra.Command, args []string) error {
 	byLetter := shorthands(root)
 	terminated := false
@@ -65,8 +64,7 @@ func validateShorthands(root *cobra.Command, args []string) error {
 			}
 		}
 
-		// A cluster of booleans is fine, but a shorthand that wants a value has to
-		// stand alone — otherwise its value is silently whatever follows it.
+		// A value-taking shorthand has to stand alone, or its value is whatever follows it.
 		if byLetter[body[0]] {
 			return fmt.Errorf("shorthand -%s takes a value and cannot be combined: write -%s <value> or -%s=<value>", body[:1], body[:1], body[:1])
 		}
