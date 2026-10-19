@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -16,6 +17,10 @@ func main() {
 	}
 
 	rootCmd.AddCommand(newCreateCmd(), newReadCmd(), newUpdateCmd(), newDeleteCmd())
+
+	if err := validateShorthands(rootCmd, os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)

@@ -40,9 +40,10 @@ does not cross a `/`: `-p '*'` selects only the keys directly under the prefix,
 while `-d art/compressed -p '*.avif'` selects the compressed tier. Alternatively
 pass bucket keys as positional arguments.
 
-The long form needs two dashes: pflag is GNU-style, so `-pattern` is not a flag
-name but the shorthand `-p` with the value `attern`. Quote every glob — an
-unquoted `*` is expanded by the shell before the tool sees it.
+The long form takes two dashes: `-pattern` is read as a cluster of the shorthands
+`-p -a -t …` and rejected as an unknown flag, so a long flag written with one dash
+fails instead of silently becoming `-p attern`. Quote every glob — an unquoted `*`
+is expanded by the shell before the tool sees it.
 
 ## Commands
 
