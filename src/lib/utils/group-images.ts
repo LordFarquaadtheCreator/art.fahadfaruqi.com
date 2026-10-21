@@ -3,6 +3,7 @@ import type { Photo } from './metadata';
 export interface PhotoSet {
 	name: string;
 	slug: string;
+	description: string;
 	photos: Photo[];
 	latestUpload: string;
 }
@@ -27,9 +28,15 @@ export function groupBySet(photos: Photo[]): PhotoSet[] {
 		.map(([name, setPhotos]) => {
 			const ordered = [...setPhotos].sort((a, b) => a.number - b.number);
 
+			// Every photograph carries the set's description; the first one that has it
+			// speaks for the set, so the text does not depend on the upload the API
+			// happens to return first.
+			const description = ordered.find((photo) => photo.setDescription)?.setDescription ?? '';
+
 			return {
 				name,
 				slug: slugify(name),
+				description,
 				photos: ordered,
 				latestUpload: ordered.reduce(
 					(latest, photo) => (photo.uploaded > latest ? photo.uploaded : latest),

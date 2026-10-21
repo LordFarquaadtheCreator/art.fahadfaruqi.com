@@ -24,6 +24,7 @@ interface ApiObject extends RawExif {
 	alttext?: string;
 	description?: string;
 	set?: string;
+	set_description?: string;
 	number?: string;
 }
 
@@ -42,6 +43,7 @@ export interface Photo {
 	size: number;
 	uploaded: string;
 	set: string;
+	setDescription: string;
 	number: number;
 	title: string;
 	alt: string;
@@ -73,6 +75,7 @@ export function toPhoto(object: ApiObject): Photo {
 		size: object.master_size ?? object.size,
 		uploaded: object.uploaded,
 		set: object.set?.trim() || 'unfiled',
+		setDescription: object.set_description?.trim() || '',
 		number: Number.isFinite(number) ? number : 0,
 		title,
 		alt: object.alttext?.trim() || title,

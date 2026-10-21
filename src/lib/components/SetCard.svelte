@@ -10,9 +10,11 @@
 	let card = $state<HTMLElement>();
 	let cardIndex = $state<HTMLElement>();
 	let cardName = $state<HTMLElement>();
+	let cardDescription = $state<HTMLElement>();
 	let cardCount = $state<HTMLElement>();
 	let headIndex = $state<HTMLElement>();
 	let headName = $state<HTMLElement>();
+	let headDescription = $state<HTMLElement>();
 	let headCount = $state<HTMLElement>();
 
 	function onEnter(node: HTMLElement, notify: (value: boolean) => void) {
@@ -123,8 +125,8 @@
 
 		const legs: { node: HTMLElement; target: HTMLElement }[] = [];
 
-		[cardIndex, cardName, cardCount].forEach((node, i) => {
-			const target = [headIndex, headName, headCount][i];
+		[cardIndex, cardName, cardDescription, cardCount].forEach((node, i) => {
+			const target = [headIndex, headName, headDescription, headCount][i];
 			if (!node || !target) return;
 
 			const to = target.getBoundingClientRect();
@@ -159,6 +161,9 @@
 	<div class="card__inner fade-in-animation">
 		<span class="label  card__index" bind:this={cardIndex}>Set {pad(index + 1)}</span>
 		<h3 class="card__name title medium" bind:this={cardName}>{set.name}</h3>
+		{#if set.description}
+			<p class="card__description subtitle" bind:this={cardDescription}>{set.description}</p>
+		{/if}
 		<span class="label  card__meta" bind:this={cardCount}>
 			{set.photos.length} photographs &middot; {latest(set.photos)}
 		</span>
@@ -172,9 +177,14 @@
 	class:set__head--pinned={pinned}
 	class:set__head--waiting={measuring && !pinned}
 >
-	<span class="label " bind:this={headIndex}>{pad(index + 1)}</span>
-	<h2 class="set__name" bind:this={headName}>{set.name}</h2>
-	<span class="label " bind:this={headCount}>{set.photos.length} photographs</span>
+	<span class="label set__index" bind:this={headIndex}>{pad(index + 1)}</span>
+	<div class="set__titles">
+		<h2 class="set__name" bind:this={headName}>{set.name}</h2>
+		{#if set.description}
+			<p class="set__description subtitle" bind:this={headDescription}>{set.description}</p>
+		{/if}
+	</div>
+	<span class="label set__count" bind:this={headCount}>{set.photos.length} photographs</span>
 </header>
 
 <style>
@@ -199,6 +209,10 @@
 		color: var(--muted);
 	}
 
+	.card__description {
+		max-width: 52ch;
+	}
+
 	/* The rule is the projection: it draws itself across the band as the set arrives.
 	   Its default is drawn, so a visitor whose animations never run still sees it. */
 	.card__rule {
@@ -214,12 +228,17 @@
 
 	.card--in .card__index,
 	.card--in .card__name,
+	.card--in .card__description,
 	.card--in .card__meta {
 		animation: card-in 0.75s cubic-bezier(0.16, 0.84, 0.28, 1) both;
 	}
 
 	.card--in .card__name {
 		animation-delay: 0.06s;
+	}
+
+	.card--in .card__description {
+		animation-delay: 0.09s;
 	}
 
 	.card--in .card__meta {
@@ -236,6 +255,7 @@
 
 	.card--out .card__index,
 	.card--out .card__name,
+	.card--out .card__description,
 	.card--out .card__meta {
 		position: relative;
 		z-index: 6;
@@ -306,5 +326,45 @@
 	.set__head--pinned {
 		background: color-mix(in srgb, var(--bg) 94%, transparent);
 		box-shadow: 0 1px 0 var(--line);
+	}
+
+	/* The heading and its subheading share a slot, so the pin handoff moves them
+	   together and the count keeps the far end of the bar. */
+	.set__titles {
+		display: grid;
+		gap: 0.1rem;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.set__description {
+		max-width: 56ch;
+	}
+
+	/* Below the split, a bar with a description in it cannot keep the single row: the
+	   text would be squeezed into whatever the index and the count leave. The labels
+	   take the first row and the heading gets the bar's full width. */
+	@media (max-width: 700px) {
+		.set__head:has(.set__description) {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			row-gap: 0.35rem;
+		}
+
+		.set__head:has(.set__description) .set__index {
+			grid-row: 1;
+			grid-column: 1;
+		}
+
+		.set__head:has(.set__description) .set__count {
+			grid-row: 1;
+			grid-column: 2;
+			justify-self: end;
+		}
+
+		.set__head:has(.set__description) .set__titles {
+			grid-row: 2;
+			grid-column: 1 / -1;
+		}
 	}
 </style>
