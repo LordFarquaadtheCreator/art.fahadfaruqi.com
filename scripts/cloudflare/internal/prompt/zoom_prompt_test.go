@@ -54,12 +54,12 @@ func withStdin(t *testing.T, input string) func() string {
 	}
 }
 
-const answers = "A title\n\nA description\nA set\n7\n"
+const answers = "A title\n\nA description\nA set\nA set description\n7\n"
 
 func TestPromptDeclinesZoom(t *testing.T) {
 	withStdin(t, answers+"n\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestPromptDeclinesZoom(t *testing.T) {
 func TestPromptAcceptsZeroCoordinate(t *testing.T) {
 	withStdin(t, answers+"y\n0\n0\n0.5\n1200\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestPromptRetriesBadValues(t *testing.T) {
 	}, "\n") + "\n"
 	withStdin(t, in)
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestPromptSkipsZoomWhenAlreadySet(t *testing.T) {
 	withStdin(t, answers)
 
 	existing := &exif.Metadata{Exif: map[string]string{}, ZoomX: 0.3, ZoomY: 0.4, ZoomLevel: 3, ZoomDuration: 800}
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", existing, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", existing, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}

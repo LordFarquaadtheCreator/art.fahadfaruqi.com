@@ -13,12 +13,13 @@ import (
 )
 
 type Metadata struct {
-	Title       string
-	AltText     string
-	Description string
-	Set         string
-	Number      int
-	Exif        map[string]string
+	Title          string
+	AltText        string
+	Description    string
+	Set            string
+	SetDescription string
+	Number         int
+	Exif           map[string]string
 
 	// The programmed zoom: a point to settle the framing on, the scale to settle at,
 	// and how long to take. A level of 0 means no move.
@@ -96,21 +97,22 @@ func FromMap(custom map[string]string) (*Metadata, error) {
 	}
 
 	metadata := &Metadata{
-		Title:        normalised["title"],
-		AltText:      normalised["alttext"],
-		Description:  normalised["description"],
-		Set:          normalised["set"],
-		Number:       number,
-		Exif:         map[string]string{},
-		ZoomX:        zoomX,
-		ZoomY:        zoomY,
-		ZoomLevel:    zoomLevel,
-		ZoomDuration: int(zoomDuration),
+		Title:          normalised["title"],
+		AltText:        normalised["alttext"],
+		Description:    normalised["description"],
+		Set:            normalised["set"],
+		SetDescription: normalised["set_description"],
+		Number:         number,
+		Exif:           map[string]string{},
+		ZoomX:          zoomX,
+		ZoomY:          zoomY,
+		ZoomLevel:      zoomLevel,
+		ZoomDuration:   int(zoomDuration),
 	}
 
 	for k, v := range normalised {
 		switch k {
-		case "title", "alttext", "description", "set", "number",
+		case "title", "alttext", "description", "set", "set_description", "number",
 			"zoom_x", "zoom_y", "zoom_level", "zoom_duration":
 			continue
 		}
@@ -141,11 +143,12 @@ func parseZoomField(normalised map[string]string, key string) (float64, error) {
 // Map renders the metadata as the custom metadata R2 stores alongside the object.
 func (m *Metadata) Map() map[string]string {
 	metaMap := map[string]string{
-		"title":       m.Title,
-		"altText":     m.AltText,
-		"description": m.Description,
-		"set":         m.Set,
-		"number":      strconv.Itoa(m.Number),
+		"title":           m.Title,
+		"altText":         m.AltText,
+		"description":     m.Description,
+		"set":             m.Set,
+		"set_description": m.SetDescription,
+		"number":          strconv.Itoa(m.Number),
 	}
 
 	if m.zoomEnabled() {

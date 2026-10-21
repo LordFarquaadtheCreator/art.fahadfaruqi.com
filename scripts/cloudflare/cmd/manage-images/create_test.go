@@ -71,7 +71,7 @@ func TestCompressFailsOnAMissingInput(t *testing.T) {
 }
 
 func TestAskForMetadataNumbersTheWholeBatch(t *testing.T) {
-	withPromptStdin(t, "One\n\nFirst\nsam\n\nn\n"+"Two\n\nSecond\n\n\n")
+	withPromptStdin(t, "One\n\nFirst\nsam\nA set\n\nn\n"+"Two\n\nSecond\n\n\n\n")
 
 	// A nil client is honest here: --inherit is empty, so nothing is fetched.
 	uploads := askForMetadata(nil, []string{"a.jpg", "b.jpg"}, "", "art/master")
@@ -92,7 +92,7 @@ func TestAskForMetadataNumbersTheWholeBatch(t *testing.T) {
 // Two files in one set cannot land on the same position: the repeat is refused and
 // the file has to answer again.
 func TestAskForMetadataRefusesASharedNumberWithinTheBatch(t *testing.T) {
-	withPromptStdin(t, "One\n\nFirst\nsam\n1\nn\n"+"Two\n\nSecond\n\n1\n2\n")
+	withPromptStdin(t, "One\n\nFirst\nsam\nA set\n1\nn\n"+"Two\n\nSecond\n\n\n1\n2\n")
 
 	uploads := askForMetadata(nil, []string{"a.jpg", "b.jpg"}, "", "art/master")
 	if len(uploads) != 2 {
@@ -100,6 +100,27 @@ func TestAskForMetadataRefusesASharedNumberWithinTheBatch(t *testing.T) {
 	}
 	if uploads[0].metadata.Number != 1 || uploads[1].metadata.Number != 2 {
 		t.Fatalf("numbers are %d and %d, want 1 and 2", uploads[0].metadata.Number, uploads[1].metadata.Number)
+	}
+}
+
+// The set description is asked once for the batch: the first file's answer is carried
+// by the rest of the set, so every object in it can serve it to the gallery.
+func TestAskForMetadataSharesTheSetDescriptionAcrossTheBatch(t *testing.T) {
+	withPromptStdin(t, "One\n\nFirst\nsam\nNight streets, lit by the last shop closing.\n\nn\n"+"Two\n\nSecond\n\n\n\n")
+
+	uploads := askForMetadata(nil, []string{"a.jpg", "b.jpg"}, "", "art/master")
+	if len(uploads) != 2 {
+		t.Fatalf("collected %d files, want 2", len(uploads))
+	}
+
+	const want = "Night streets, lit by the last shop closing."
+	for i, upload := range uploads {
+		if got := upload.metadata.SetDescription; got != want {
+			t.Errorf("file %d carries %q, want %q", i, got, want)
+		}
+		if got := upload.metadata.Map()["set_description"]; got != want {
+			t.Errorf("file %d writes set_description as %q", i, got)
+		}
 	}
 }
 

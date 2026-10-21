@@ -61,9 +61,9 @@ func TestNumbersRefuseARepeatWithinOneSet(t *testing.T) {
 
 // The first item of a run is offered 1, and an empty answer takes it.
 func TestPromptOffersOneForTheFirstItem(t *testing.T) {
-	capture := withStdin(t, "One\n\nDesc one\nsam\n\n")
+	capture := withStdin(t, "One\n\nDesc one\nsam\nA set described\n\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -79,9 +79,9 @@ func TestPromptOffersOneForTheFirstItem(t *testing.T) {
 func TestPromptOffersTheNextNumberForTheSecondFile(t *testing.T) {
 	numbers := NewNumbers()
 
-	withStdin(t, "One\n\nDesc one\nsam\n6\n")()
+	withStdin(t, "One\n\nDesc one\nsam\nA set described\n6\n")()
 
-	first, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", numbers)
+	first, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), numbers)
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -89,9 +89,9 @@ func TestPromptOffersTheNextNumberForTheSecondFile(t *testing.T) {
 		t.Fatalf("accepted %d, want 6", first.Number)
 	}
 
-	capture := withStdin(t, "Two\n\nDesc two\n\n\n")
+	capture := withStdin(t, "Two\n\nDesc two\n\n\n\n")
 
-	second, err := ForMetadata(bufio.NewReader(os.Stdin), "b.jpg", &exif.Metadata{Exif: map[string]string{}}, "sam", numbers)
+	second, err := ForMetadata(bufio.NewReader(os.Stdin), "b.jpg", &exif.Metadata{Exif: map[string]string{}}, "sam", NewSetDescriptions(), numbers)
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -111,9 +111,9 @@ func TestPromptRefusesANumberTheRunAlreadyTook(t *testing.T) {
 	numbers := NewNumbers()
 	numbers.Acknowledge("sam", 3)
 
-	capture := withStdin(t, "One\n\nDesc\nsam\n3\n4\n")
+	capture := withStdin(t, "One\n\nDesc\nsam\nA set\n3\n4\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", numbers)
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), numbers)
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -131,9 +131,9 @@ func TestPromptFillsAGapWithoutMovingTheDefault(t *testing.T) {
 	numbers := NewNumbers()
 	numbers.Acknowledge("sam", 7)
 
-	capture := withStdin(t, "One\n\nDesc\nsam\n4\n")
+	capture := withStdin(t, "One\n\nDesc\nsam\nA set\n4\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", numbers)
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), numbers)
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -148,9 +148,9 @@ func TestPromptFillsAGapWithoutMovingTheDefault(t *testing.T) {
 // Numbers stay positive: 0 is the not-answered sentinel, and a negative position
 // would sort ahead of the set's first photograph.
 func TestPromptRejectsZeroAndNegativeNumbers(t *testing.T) {
-	capture := withStdin(t, "One\n\nDesc\nsam\n0\n-2\n1\n")
+	capture := withStdin(t, "One\n\nDesc\nsam\nA set\n0\n-2\n1\n")
 
-	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -167,7 +167,7 @@ func TestPromptRejectsZeroAndNegativeNumbers(t *testing.T) {
 func TestPromptFailsWhenTheScriptEndsEarly(t *testing.T) {
 	withStdin(t, "A title\n\n")
 
-	_, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
+	_, err := ForMetadata(bufio.NewReader(os.Stdin), "a.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewSetDescriptions(), NewNumbers())
 	if err == nil {
 		t.Fatal("a script ending before the description was accepted")
 	}

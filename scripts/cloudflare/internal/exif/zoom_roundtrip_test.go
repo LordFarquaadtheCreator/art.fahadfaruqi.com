@@ -7,12 +7,52 @@ import (
 
 func base() map[string]string {
 	return map[string]string{
-		"title":       "Morning light",
-		"altText":     "Morning light",
-		"description": "A description",
-		"set":         "Sam",
-		"number":      "3",
-		"make":        "NIKON CORPORATION",
+		"title":           "Morning light",
+		"altText":         "Morning light",
+		"description":     "A description",
+		"set":             "Sam",
+		"set_description": "Night streets, lit by the last shop closing.",
+		"number":          "3",
+		"make":            "NIKON CORPORATION",
+	}
+}
+
+func TestSetDescriptionRoundTrip(t *testing.T) {
+	custom := base()
+
+	metadata, err := FromMap(custom)
+	if err != nil {
+		t.Fatalf("FromMap: %v", err)
+	}
+	if metadata.SetDescription != custom["set_description"] {
+		t.Fatalf("SetDescription is %q", metadata.SetDescription)
+	}
+
+	out := metadata.Map()
+	if out["set_description"] != custom["set_description"] {
+		t.Errorf("set_description round-tripped as %q, want %q", out["set_description"], custom["set_description"])
+	}
+	// Lifted into the field, so it must not also ride along in Exif and be written twice.
+	if _, leaked := metadata.Exif["set_description"]; leaked {
+		t.Error("set_description leaked into Exif")
+	}
+}
+
+// Objects published before the field existed carry no description; re-encoding one
+// must leave it empty rather than invent text.
+func TestSetDescriptionAbsentIsEmpty(t *testing.T) {
+	custom := base()
+	delete(custom, "set_description")
+
+	metadata, err := FromMap(custom)
+	if err != nil {
+		t.Fatalf("FromMap: %v", err)
+	}
+	if metadata.SetDescription != "" {
+		t.Fatalf("an absent description became %q", metadata.SetDescription)
+	}
+	if out := metadata.Map(); out["set_description"] != "" {
+		t.Errorf("Map wrote %q for an absent description", out["set_description"])
 	}
 }
 

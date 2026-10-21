@@ -22,6 +22,7 @@ func newUpdateCmd() *cobra.Command {
 	cmd.Flags().String("alt-text", "", "Alt text")
 	cmd.Flags().String("description", "", "Description")
 	cmd.Flags().String("set", "", "Set the image belongs to")
+	cmd.Flags().String("set-description", "", "Description shown under the set's heading")
 	cmd.Flags().Int("number", 0, "Order of the image within its set")
 
 	return cmd
@@ -85,10 +86,11 @@ func runUpdate(cmd *cobra.Command, args []string) {
 // that was not passed leaves that field alone.
 func metadataChanges(cmd *cobra.Command) (map[string]string, error) {
 	fields := map[string]string{
-		"title":       "title",
-		"alt-text":    "altText",
-		"description": "description",
-		"set":         "set",
+		"title":           "title",
+		"alt-text":        "altText",
+		"description":     "description",
+		"set":             "set",
+		"set-description": "set_description",
 	}
 
 	changes := map[string]string{}

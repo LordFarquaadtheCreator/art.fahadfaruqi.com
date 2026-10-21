@@ -61,8 +61,14 @@ is expanded by the shell before the tool sees it.
 ./manage-images create -d ~/Pictures/raws -p '*.jpg'
 ```
 
-Prompts for `title`, `altText`, `description`, `set`, and `number`, reusing the
-first image's set as the default for the rest of the batch.
+Prompts for `title`, `altText`, `description`, `set`, `setDescription`, and
+`number`, reusing the first image's set as the default for the rest of the batch.
+
+`setDescription` describes the set rather than the photograph. It is asked once per
+set and written to every object of that set as the `set_description` custom key, so
+the gallery can read it from whichever photograph it lands on first. A blank answer
+leaves it empty, and the next file of the same set is offered the previous answer;
+another set starts blank.
 
 The number prompt offers a default and refuses a repeat:
 
@@ -172,8 +178,13 @@ One URL per line, sorted, so it pipes into `xargs`, `curl`, or a browser.
 ```sh
 ./manage-images update -d art/master sam-1.webp --title 'Morning light' --number 3
 ./manage-images update -d art/master -p 'sam-*.webp' --set 'Sam'
+./manage-images update -d art/master -p 'sam-*.webp' --set-description 'Night streets, lit by the last shop closing.'
 ./manage-images update -d art/master sam-1.webp --name sam-01     # -> art/master/sam-01.webp
 ```
+
+The set description is carried by every object of the set, so edit it with `-p`
+across the whole set — changing one object leaves the others saying something
+different.
 
 Only the flags you pass are changed; the rest of the object's metadata is
 preserved. `-name` takes a new file name, keeps the original extension when the

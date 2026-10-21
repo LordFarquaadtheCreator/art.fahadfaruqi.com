@@ -152,6 +152,7 @@ type pending struct {
 // the run, so each prompt offers one past what the batch has taken for that set.
 func askForMetadata(client *r2.Client, filePaths []string, inherit, masterPrefix string) []pending {
 	defaultSet := ""
+	setDescriptions := prompt.NewSetDescriptions()
 	numbers := prompt.NewNumbers()
 	reader := bufio.NewReader(os.Stdin)
 
@@ -194,7 +195,7 @@ func askForMetadata(client *r2.Client, filePaths []string, inherit, masterPrefix
 			setDefault = defaultSet
 		}
 
-		metadata, err = prompt.ForMetadata(reader, filePath, metadata, setDefault, numbers)
+		metadata, err = prompt.ForMetadata(reader, filePath, metadata, setDefault, setDescriptions, numbers)
 		if err != nil {
 			log.Fatalf("Failed to prompt for metadata: %v", err)
 		}

@@ -17,7 +17,7 @@ import (
 //
 // The reader belongs to the run, not the file: a per-file bufio.Reader would swallow
 // the rest of a piped script for the files after it.
-func ForMetadata(reader *bufio.Reader, filePath string, metadata *exif.Metadata, defaultSet string, numbers *Numbers) (*exif.Metadata, error) {
+func ForMetadata(reader *bufio.Reader, filePath string, metadata *exif.Metadata, defaultSet string, setDescriptions SetDescriptions, numbers *Numbers) (*exif.Metadata, error) {
 	fmt.Printf("\nExtracted EXIF data for %s:\n", filepath.Base(filePath))
 	for k, v := range metadata.Exif {
 		fmt.Printf("  %s: %s\n", k, v)
@@ -80,6 +80,25 @@ func ForMetadata(reader *bufio.Reader, filePath string, metadata *exif.Metadata,
 			}
 		}
 	}
+
+	// The description belongs to the set, so a batch answers it once: the next file of
+	// the same set is offered what this one said, and another set starts blank.
+	descriptionDefault := setDescriptions.Default(metadata.Set)
+	if descriptionDefault != "" {
+		fmt.Printf("Set description [%s]: ", descriptionDefault)
+	} else {
+		fmt.Print("Set description: ")
+	}
+	setDescription, err := reader.ReadString('\n')
+	if err != nil && strings.TrimSpace(setDescription) == "" {
+		return nil, fmt.Errorf("stdin ended before the set description of %s", filepath.Base(filePath))
+	}
+	if setDescription = strings.TrimSpace(setDescription); setDescription != "" {
+		metadata.SetDescription = setDescription
+	} else {
+		metadata.SetDescription = descriptionDefault
+	}
+	setDescriptions.Record(metadata.Set, metadata.SetDescription)
 
 	for metadata.Number == 0 {
 		numberDefault := numbers.Default(metadata.Set)
