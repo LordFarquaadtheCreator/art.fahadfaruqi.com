@@ -64,6 +64,26 @@ is expanded by the shell before the tool sees it.
 Prompts for `title`, `altText`, `description`, `set`, and `number`, reusing the
 first image's set as the default for the rest of the batch.
 
+The number prompt offers a default and refuses a repeat:
+
+```
+Number in sam [4]:
+```
+
+The default is one past the highest number this run has accepted for that set, or
+`1` when it has accepted none, so the first item of a batch is offered `1` and each
+later item continues its own set — a batch that names two sets counts each one
+separately. Gaps are left alone: type any free number and the default moves past it
+as before. A number the run has already given that set is refused, with the numbers
+it holds listed, because two photographs in one set claiming the same position is
+the one thing the gallery cannot order. Only this run's answers count; numbers
+already in the bucket are not consulted, and none are changed.
+
+The reader is shared across the batch, so one piped script can answer for several
+files — but every file before the last has to answer the zoom prompt (`n`) or the
+script slides one line out of step. A script that runs out before a required answer
+now fails with the missing field instead of re-asking forever.
+
 Each file is published as two objects: the master under `art/master/<name>`, and a
 compressed sibling under `art/compressed/<stem>.avif` — same stem, AVIF, 1600 px
 wide with the height following the master's ratio, encoded by

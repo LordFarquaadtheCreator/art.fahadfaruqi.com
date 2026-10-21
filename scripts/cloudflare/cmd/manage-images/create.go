@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -128,13 +129,33 @@ func runCreate(cmd *cobra.Command, args []string) {
 	}
 	defer os.RemoveAll(scratch)
 
-	type pending struct {
-		path     string
-		metadata *exif.Metadata
-	}
+	uploads := askForMetadata(client, filePaths, inherit, masterPrefix)
 
+	for _, upload := range uploads {
+		if err := publish(client, scratch, upload.path, upload.metadata, masterPrefix, compressedPrefix, width, crf, preset); err != nil {
+			log.Printf("Upload failed: %v", err)
+			continue
+		}
+
+		fmt.Printf("Uploaded %s successfully\n", filepath.Base(upload.path))
+	}
+}
+
+// pending is one file awaiting upload, with the metadata it will carry.
+type pending struct {
+	path     string
+	metadata *exif.Metadata
+}
+
+// askForMetadata collects the metadata of every file: --inherit reads it from the
+// object being replaced, everything else is prompted for. One number book serves
+// the run, so each prompt offers one past what the batch has taken for that set.
+func askForMetadata(client *r2.Client, filePaths []string, inherit, masterPrefix string) []pending {
 	defaultSet := ""
-	var uploads []pending
+	numbers := prompt.NewNumbers()
+	reader := bufio.NewReader(os.Stdin)
+
+	uploads := make([]pending, 0, len(filePaths))
 
 	for i, filePath := range filePaths {
 		if inherit != "" {
@@ -173,7 +194,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 			setDefault = defaultSet
 		}
 
-		metadata, err = prompt.ForMetadata(filePath, metadata, setDefault)
+		metadata, err = prompt.ForMetadata(reader, filePath, metadata, setDefault, numbers)
 		if err != nil {
 			log.Fatalf("Failed to prompt for metadata: %v", err)
 		}
@@ -185,14 +206,7 @@ func runCreate(cmd *cobra.Command, args []string) {
 		uploads = append(uploads, pending{filePath, metadata})
 	}
 
-	for _, upload := range uploads {
-		if err := publish(client, scratch, upload.path, upload.metadata, masterPrefix, compressedPrefix, width, crf, preset); err != nil {
-			log.Printf("Upload failed: %v", err)
-			continue
-		}
-
-		fmt.Printf("Uploaded %s successfully\n", filepath.Base(upload.path))
-	}
+	return uploads
 }
 
 // publish writes a master and its compressed sibling. The sibling is encoded

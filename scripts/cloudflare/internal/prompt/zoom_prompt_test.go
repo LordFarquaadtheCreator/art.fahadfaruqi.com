@@ -1,6 +1,8 @@
 package prompt
 
 import (
+	"bufio"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -9,26 +11,47 @@ import (
 )
 
 // withStdin swaps the process's stdin for the length of a test: ForMetadata reads it
-// directly rather than taking a reader.
-func withStdin(t *testing.T, input string) {
+// directly rather than taking a reader. Stdout goes to a pipe, not /dev/null, so a
+// test can assert what the prompts printed; the returned function restores both
+// streams and yields that output.
+func withStdin(t *testing.T, input string) func() string {
 	t.Helper()
-	r, w, err := os.Pipe()
+	inR, inW, err := os.Pipe()
 	if err != nil {
-		t.Fatalf("pipe: %v", err)
+		t.Fatalf("stdin pipe: %v", err)
 	}
-	original := os.Stdin
-	os.Stdin = r
-	t.Cleanup(func() { os.Stdin = original })
+	outR, outW, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("stdout pipe: %v", err)
+	}
+
+	originalIn, originalOut := os.Stdin, os.Stdout
+	os.Stdin, os.Stdout = inR, outW
 
 	// Write in the background: a full pipe would block the test before the reader runs.
 	go func() {
-		defer w.Close()
-		_, _ = w.WriteString(input)
+		defer inW.Close()
+		_, _ = inW.WriteString(input)
 	}()
-	devNull, _ := os.Open(os.DevNull)
-	stdout := os.Stdout
-	os.Stdout = devNull
-	t.Cleanup(func() { os.Stdout = stdout })
+
+	collected := false
+	t.Cleanup(func() {
+		os.Stdin, os.Stdout = originalIn, originalOut
+		outW.Close()
+		if !collected {
+			outR.Close()
+		}
+	})
+
+	return func() string {
+		collected = true
+		os.Stdout = originalOut
+		outW.Close()
+		printed, _ := io.ReadAll(outR)
+		outR.Close()
+
+		return string(printed)
+	}
 }
 
 const answers = "A title\n\nA description\nA set\n7\n"
@@ -36,7 +59,7 @@ const answers = "A title\n\nA description\nA set\n7\n"
 func TestPromptDeclinesZoom(t *testing.T) {
 	withStdin(t, answers+"n\n")
 
-	metadata, err := ForMetadata("x.jpg", &exif.Metadata{Exif: map[string]string{}}, "")
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -49,7 +72,7 @@ func TestPromptDeclinesZoom(t *testing.T) {
 func TestPromptAcceptsZeroCoordinate(t *testing.T) {
 	withStdin(t, answers+"y\n0\n0\n0.5\n1200\n")
 
-	metadata, err := ForMetadata("x.jpg", &exif.Metadata{Exif: map[string]string{}}, "")
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -74,7 +97,7 @@ func TestPromptRetriesBadValues(t *testing.T) {
 	}, "\n") + "\n"
 	withStdin(t, in)
 
-	metadata, err := ForMetadata("x.jpg", &exif.Metadata{Exif: map[string]string{}}, "")
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", &exif.Metadata{Exif: map[string]string{}}, "", NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}
@@ -96,7 +119,7 @@ func TestPromptSkipsZoomWhenAlreadySet(t *testing.T) {
 	withStdin(t, answers)
 
 	existing := &exif.Metadata{Exif: map[string]string{}, ZoomX: 0.3, ZoomY: 0.4, ZoomLevel: 3, ZoomDuration: 800}
-	metadata, err := ForMetadata("x.jpg", existing, "")
+	metadata, err := ForMetadata(bufio.NewReader(os.Stdin), "x.jpg", existing, "", NewNumbers())
 	if err != nil {
 		t.Fatalf("ForMetadata: %v", err)
 	}

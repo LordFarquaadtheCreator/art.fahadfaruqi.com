@@ -3,7 +3,6 @@ package prompt
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -11,9 +10,14 @@ import (
 	"manage-images/internal/exif"
 )
 
-func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*exif.Metadata, error) {
-	reader := bufio.NewReader(os.Stdin)
-
+// ForMetadata asks for the fields the bucket stores alongside a photograph. The
+// number prompt offers the set's next free number — one past the highest this run
+// has accepted for it — and refuses an answer the run already gave that set, so a
+// batch cannot publish two items into the same position.
+//
+// The reader belongs to the run, not the file: a per-file bufio.Reader would swallow
+// the rest of a piped script for the files after it.
+func ForMetadata(reader *bufio.Reader, filePath string, metadata *exif.Metadata, defaultSet string, numbers *Numbers) (*exif.Metadata, error) {
 	fmt.Printf("\nExtracted EXIF data for %s:\n", filepath.Base(filePath))
 	for k, v := range metadata.Exif {
 		fmt.Printf("  %s: %s\n", k, v)
@@ -21,7 +25,10 @@ func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*
 
 	for metadata.Title == "" {
 		fmt.Printf("Title for %s: ", filepath.Base(filePath))
-		title, _ := reader.ReadString('\n')
+		title, err := reader.ReadString('\n')
+		if err != nil && strings.TrimSpace(title) == "" {
+			return nil, fmt.Errorf("stdin ended before the title of %s", filepath.Base(filePath))
+		}
 		metadata.Title = strings.TrimSpace(title)
 		if metadata.Title == "" {
 			fmt.Println("Title is required. Please try again.")
@@ -41,7 +48,10 @@ func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*
 
 	for metadata.Description == "" {
 		fmt.Print("Description: ")
-		description, _ := reader.ReadString('\n')
+		description, err := reader.ReadString('\n')
+		if err != nil && strings.TrimSpace(description) == "" {
+			return nil, fmt.Errorf("stdin ended before the description of %s", filepath.Base(filePath))
+		}
 		metadata.Description = strings.TrimSpace(description)
 		if metadata.Description == "" {
 			fmt.Println("Description is required. Please try again.")
@@ -60,7 +70,10 @@ func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*
 			}
 		} else {
 			fmt.Print("Set: ")
-			set, _ := reader.ReadString('\n')
+			set, err := reader.ReadString('\n')
+			if err != nil && strings.TrimSpace(set) == "" {
+				return nil, fmt.Errorf("stdin ended before the set of %s", filepath.Base(filePath))
+			}
 			metadata.Set = strings.TrimSpace(set)
 			if metadata.Set == "" {
 				fmt.Println("Set is required. Please try again.")
@@ -69,18 +82,35 @@ func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*
 	}
 
 	for metadata.Number == 0 {
-		fmt.Print("Number (required for ordering): ")
-		numberStr, _ := reader.ReadString('\n')
-		numberStr = strings.TrimSpace(numberStr)
-		if numberStr == "" {
-			fmt.Println("Number is required. Please try again.")
+		numberDefault := numbers.Default(metadata.Set)
+		fmt.Printf("Number in %s [%d]: ", metadata.Set, numberDefault)
+
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		accepted := numberDefault
+		if answer != "" {
+			number, err := strconv.Atoi(answer)
+			if err != nil {
+				fmt.Printf("Invalid number: %v. Please try again.\n", err)
+				continue
+			}
+			if number < 1 {
+				fmt.Println("Number must be 1 or more. Please try again.")
+				continue
+			}
+			accepted = number
+		}
+
+		// Collisions are refused, gaps are not: any free number is taken as answered,
+		// while a number this set already holds in the run is asked for again.
+		if !numbers.Acknowledge(metadata.Set, accepted) {
+			fmt.Printf("Number %d is already taken in %s (%s). Choose another.\n",
+				accepted, metadata.Set, numberList(numbers.AcknowledgedIn(metadata.Set)))
 			continue
 		}
-		if number, err := strconv.Atoi(numberStr); err == nil {
-			metadata.Number = number
-		} else {
-			fmt.Printf("Invalid number: %v. Please try again.\n", err)
-		}
+
+		metadata.Number = accepted
 	}
 
 	if metadata.ZoomLevel > 0 {
@@ -170,4 +200,14 @@ func ForMetadata(filePath string, metadata *exif.Metadata, defaultSet string) (*
 	metadata.ZoomDuration = zoomDuration
 
 	return metadata, nil
+}
+
+// numberList renders a set's accepted numbers for the message that refuses a repeat.
+func numberList(numbers []int) string {
+	parts := make([]string, 0, len(numbers))
+	for _, number := range numbers {
+		parts = append(parts, strconv.Itoa(number))
+	}
+
+	return strings.Join(parts, ", ")
 }
