@@ -179,6 +179,7 @@ One URL per line, sorted, so it pipes into `xargs`, `curl`, or a browser.
 ./manage-images update -d art/master sam-1.webp --title 'Morning light' --number 3
 ./manage-images update -d art/master -p 'sam-*.webp' --set 'Sam'
 ./manage-images update -d art/master -p 'sam-*.webp' --set-description 'Night streets, lit by the last shop closing.'
+./manage-images update -d art/master sam-1.webp --uploaded '2026-10-19T18:44:03.652Z'
 ./manage-images update -d art/master sam-1.webp --name sam-01     # -> art/master/sam-01.webp
 ```
 
@@ -187,8 +188,12 @@ across the whole set — changing one object leaves the others saying something
 different.
 
 Only the flags you pass are changed; the rest of the object's metadata is
-preserved. `-name` takes a new file name, keeps the original extension when the
-new name has none, and stays inside the object's own prefix. Renaming copies the
+preserved. An edit is a copy, so it also keeps the object on its tier's
+`Cache-Control` and pins `uploaded` to the date the object already carried —
+without that, the file's timestamp resets and the set's displayed date moves to
+the day of the edit. `--uploaded` overrides the pin, as RFC 3339. `-name` takes a
+new file name, keeps the original extension when the new name has none, and stays
+inside the object's own prefix. Renaming copies the
 object and deletes the old key, which leaves the compressed sibling of the old stem
 in `art/compressed/` behind, where the Worker now pairs it with nothing — rename or
 re-publish that side too.

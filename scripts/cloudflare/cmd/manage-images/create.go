@@ -22,6 +22,9 @@ import (
 const (
 	masterCacheControl     = "public, max-age=86400"
 	compressedCacheControl = "public, max-age=604800"
+
+	masterKeyPrefix     = "art/master"
+	compressedKeyPrefix = "art/compressed"
 )
 
 func newCreateCmd() *cobra.Command {
@@ -34,8 +37,8 @@ func newCreateCmd() *cobra.Command {
 
 	addTargetFlags(cmd)
 
-	cmd.Flags().String("master-prefix", "art/master", "Key prefix the master is written under")
-	cmd.Flags().String("compressed-prefix", "art/compressed", "Key prefix the compressed sibling is written under")
+	cmd.Flags().String("master-prefix", masterKeyPrefix, "Key prefix the master is written under")
+	cmd.Flags().String("compressed-prefix", compressedKeyPrefix, "Key prefix the compressed sibling is written under")
 	cmd.Flags().Int("compressed-width", 1600, "Width of the compressed sibling, in pixels; the height follows the master's ratio")
 	cmd.Flags().Int("crf", 22, "AVIF crf for the compressed sibling — lower is better and larger")
 	cmd.Flags().Int("preset", 6, "SVT-AV1 preset for the compressed sibling — a slower preset saves bytes by losing quality")

@@ -155,7 +155,8 @@ Consequences to keep in mind:
 - `uploaded` is R2's own timestamp, so any re-upload resets it, and the gallery reads
   it as the set's date. `create --inherit <ext>` writes the original's value into
   custom metadata, and because custom metadata is spread over the generated fields
-  that value wins.
+  that value wins. `update` writes the same pin on every edit for the same reason —
+  a copy resets the timestamp — and `--uploaded` sets it outright.
 - `fnumber` and `focallength` arrive as rationals (`7/2`, `18/1`), `exposuretime`
   as `1/60`, `datetimeoriginal` as an ISO string with offset. `src/lib/utils/exif.ts`
   is the only place that should format these.

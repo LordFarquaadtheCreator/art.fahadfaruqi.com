@@ -40,6 +40,7 @@ type ObjectInfo struct {
 	Size         int64
 	ETag         string
 	ContentType  string
+	CacheControl string
 	LastModified time.Time
 	Metadata     map[string]string
 }
@@ -140,6 +141,7 @@ func (c *Client) Head(key string) (*ObjectInfo, error) {
 		Size:         aws.ToInt64(out.ContentLength),
 		ETag:         aws.ToString(out.ETag),
 		ContentType:  aws.ToString(out.ContentType),
+		CacheControl: aws.ToString(out.CacheControl),
 		LastModified: aws.ToTime(out.LastModified),
 		Metadata:     out.Metadata,
 	}, nil
@@ -147,20 +149,26 @@ func (c *Client) Head(key string) (*ObjectInfo, error) {
 
 // Update rewrites an object's custom metadata, optionally under a new key. The
 // copy replaces the metadata wholesale, so callers pass the metadata the object
-// should end up with. When newKey differs from key, the old key is removed.
-func (c *Client) Update(key, newKey string, metadata map[string]string, contentType string) error {
+// should end up with — and the cache header to keep, since a replace drops it.
+// When newKey differs from key, the old key is removed.
+func (c *Client) Update(key, newKey string, metadata map[string]string, contentType, cacheControl string) error {
 	if newKey == "" {
 		newKey = key
 	}
 
-	_, err := c.s3.CopyObject(context.TODO(), &s3.CopyObjectInput{
+	input := &s3.CopyObjectInput{
 		Bucket:            &c.bucket,
 		Key:               aws.String(newKey),
 		CopySource:        aws.String(copySource(c.bucket, key)),
 		ContentType:       aws.String(contentType),
 		Metadata:          metadata,
 		MetadataDirective: types.MetadataDirectiveReplace,
-	})
+	}
+	if cacheControl != "" {
+		input.CacheControl = aws.String(cacheControl)
+	}
+
+	_, err := c.s3.CopyObject(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to update %s: %w", key, err)
 	}
