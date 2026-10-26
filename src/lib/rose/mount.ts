@@ -2,6 +2,11 @@ import { ROSE_H, ROSE_SCALE, ROSE_W, hash, type Rose, vnoise } from './build';
 import RoseWorker from './rose.worker?worker&inline';
 
 const DPR_CAP = 2;
+// The pointer's field, in art units: marks inside it are pushed out and twisted round it, so the
+// drawing bends under the cursor the way a lens would. Small on purpose — the marks are the subject.
+const FIELD_RADIUS = 165;
+const FIELD_PUSH = 17;
+const FIELD_TWIST = 0.85;
 // Each glow layer is the art canvas downscaled, then stretched back up under the crisp marks:
 // three cheap blurs instead of a filter.
 const GLOW_STEPS = [2, 4, 8];
@@ -26,6 +31,26 @@ export function mountRose(canvas: HTMLCanvasElement): () => void {
 	let glow: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }[] = [];
 
 	const quiet = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	// the field the pointer drags: eased in art units, so a flick does not tear the drawing
+	let fieldX = -1e9;
+	let fieldY = -1e9;
+	let fieldWanted = 0;
+	let fieldStrength = 0;
+	let fieldInside = false;
+
+	function track(event: PointerEvent) {
+		const rect = canvas.getBoundingClientRect();
+		if (!rect.width || !rect.height) return;
+		fieldX = ((event.clientX - rect.left) / rect.width) * ROSE_W;
+		fieldY = ((event.clientY - rect.top) / rect.height) * ROSE_H;
+		fieldInside =
+			event.clientX > rect.left - FIELD_RADIUS &&
+			event.clientX < rect.right + FIELD_RADIUS &&
+			event.clientY > rect.top - FIELD_RADIUS &&
+			event.clientY < rect.bottom + FIELD_RADIUS;
+		fieldWanted = fieldInside ? 1 : 0;
+	}
 
 	function layout(): boolean {
 		const cssW = canvas.clientWidth;
@@ -77,6 +102,12 @@ export function mountRose(canvas: HTMLCanvasElement): () => void {
 			);
 		}
 
+		// the pointer's field eases in, so the drawing bends as the cursor arrives rather than
+		// snapping on the first move
+		fieldStrength += (fieldWanted - fieldStrength) * 0.08;
+		const fieldOn = fieldStrength > 0.002;
+		const fieldR2 = FIELD_RADIUS * FIELD_RADIUS;
+
 		const paths: Path2D[] = [];
 		for (let b = 0; b <= 16; b++) paths.push(new Path2D());
 		for (const m of data.marks) {
@@ -84,8 +115,23 @@ export function mountRose(canvas: HTMLCanvasElement): () => void {
 			const th = OK[m.k >= 0 ? m.k : 0] * m.w * AMAX,
 				c1 = Math.cos(th) - 1,
 				sn = Math.sin(th);
-			const x = m.x + (m.ax * c1 + m.cx * sn) * ROSE_SCALE;
-			const y = m.y - (m.ay * c1 + m.cy * sn) * ROSE_SCALE;
+			let x = m.x + (m.ax * c1 + m.cx * sn) * ROSE_SCALE;
+			let y = m.y - (m.ay * c1 + m.cy * sn) * ROSE_SCALE;
+			if (fieldOn) {
+				const dx = x - fieldX,
+					dy = y - fieldY,
+					d2 = dx * dx + dy * dy;
+				if (d2 < fieldR2) {
+					const fall = 1 - d2 / fieldR2;
+					// one scale factor carries the falloff and the amplitude: unit radial, pushed
+					// out and twisted across itself
+					const k = (fieldStrength * FIELD_PUSH * fall * fall) / (Math.sqrt(d2) + 1e-3);
+					const ux = dx * k,
+						uy = dy * k;
+					x += ux - uy * FIELD_TWIST;
+					y += uy + ux * FIELD_TWIST;
+				}
+			}
 			const path = paths[m.b];
 			if (m.t === 0 || m.t === 3) {
 				path.moveTo(x - m.n, y);
@@ -138,6 +184,12 @@ export function mountRose(canvas: HTMLCanvasElement): () => void {
 		raf = requestAnimationFrame(tick);
 	}
 
+	const clearField = () => {
+		fieldWanted = 0;
+	};
+	window.addEventListener('pointermove', track, { passive: true });
+	document.documentElement.addEventListener('pointerleave', clearField);
+
 	const observer = new ResizeObserver(() => {
 		if (!rose || quiet) draw(0);
 	});
@@ -158,6 +210,8 @@ export function mountRose(canvas: HTMLCanvasElement): () => void {
 	return () => {
 		disposed = true;
 		cancelAnimationFrame(raf);
+		window.removeEventListener('pointermove', track);
+		document.documentElement.removeEventListener('pointerleave', clearField);
 		observer.disconnect();
 		worker.terminate();
 	};
