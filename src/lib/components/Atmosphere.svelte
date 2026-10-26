@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import Rose from '$lib/components/Rose.svelte';
 	import { cursor } from '$lib/utils/cursor.svelte';
 
 	let blobBase = $state<HTMLElement | null>(null);
@@ -153,6 +154,7 @@
 	<div class="vignette vignette--light"></div>
 	<div class="noise"></div>
 	<div class="mesh"></div>
+	<Rose />
 </div>
 
 <div class="overlay" aria-hidden="true">

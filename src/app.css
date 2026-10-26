@@ -27,6 +27,8 @@
 	--blob-stretch: #dc8d18;
 	--blob-opacity: 0.5;
 	--blob-blend: screen;
+	--rose-opacity: 0.5;
+	--rose-invert: 0;
 	--accent: #dc8d18;
 	--accent-line: rgba(220, 141, 24, 0.35);
 	--accent-on-fill: #0a0a0a;
@@ -50,6 +52,8 @@
 	--blob-stretch: #dc8d18;
 	--blob-opacity: 1;
 	--blob-blend: normal;
+	--rose-opacity: 0.4;
+	--rose-invert: 1;
 	--accent: #8a4a0a;
 	--accent-line: rgba(138, 74, 10, 0.35);
 	--accent-on-fill: #f2f1ed;
@@ -151,6 +155,7 @@ img {
 	--blob-release: 0.045; /* how slowly it lets go once the pointer stops */
 	--blob-speed-full: 34; /* pointer speed, px per frame, that saturates the reaction */
 	--blob-stretch-thin: 0.3; /* share of the stretch's width given up at full reaction */
+	--rose-h: clamp(300px, 56vh, 760px); /* the corner rose's canvas height; its ink is 79% of it */
 	--block: clamp(4rem, 12vh, 11rem);
 	--display: clamp(3.25rem, 13.5vw, 12rem);
 	--lead: clamp(1.25rem, 2.6vw, 2.25rem);
